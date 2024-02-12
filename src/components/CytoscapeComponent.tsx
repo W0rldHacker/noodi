@@ -11,7 +11,7 @@ import EdgeContextMenu from './EdgeContextMenu';
 import AnimationToolbar from './AnimationToolbar';
 
 const CytoscapeComponent: React.FC = () => {
-  const { cyRef, getThemeStyles, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, algorithmMode, selectedAlgorithm, isAnimationReady, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
+  const { cyRef, getThemeStyles, saveGraph, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, algorithmMode, selectedAlgorithm, isAnimationReady, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
   const { openEdgeConfigurator } = useEdgeConfigurator();
   const [isCyReady, setIsCyReady] = useState(false);
   const [sourceNode, setSourceNode] = useState("");
@@ -48,6 +48,16 @@ const CytoscapeComponent: React.FC = () => {
       minZoom: 0.4,
       maxZoom: 6.4,
     });
+
+    const loadGraph = (cy: cytoscape.Core) => {
+      const savedGraph = localStorage.getItem('userGraph');
+      if (savedGraph) {
+        const graphData = JSON.parse(savedGraph);
+        cy.json(graphData);
+      }
+    };
+    
+    loadGraph(cyRef.current);
 
     setIsCyReady(true);
 
@@ -123,6 +133,8 @@ const CytoscapeComponent: React.FC = () => {
             y: pos.y
           }
         });
+
+        saveGraph();
       }
       else if (addEdgeMode && event.target === cyRef.current) {
         unselectNodes();
@@ -201,6 +213,7 @@ const CytoscapeComponent: React.FC = () => {
       if (deleteMode) {
         saveState();
         event.target.remove();
+        saveGraph();
       }
     };
 
@@ -244,6 +257,7 @@ const CytoscapeComponent: React.FC = () => {
       const newPosition = node.position();
       if (newPosition.x !== initialPosition.x && newPosition.y !== initialPosition.y) {
         saveState(graphState);
+        saveGraph();
       }
     }
 
@@ -264,7 +278,7 @@ const CytoscapeComponent: React.FC = () => {
       cyRef.current?.removeListener('grab', 'node', handleNodeGrab);
       cyRef.current?.removeListener('free', 'node', handleNodeFree);
     }
-  }, [cyRef, saveState, getMaxNodeId, unselectNodes, addNodeMode, addEdgeMode, deleteMode, sourceNode, openEdgeConfigurator, initialPosition, graphState, algorithmMode, selectedAlgorithm, setTooltipContent, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText, isAnimationReady])
+  }, [cyRef, saveGraph, saveState, getMaxNodeId, unselectNodes, addNodeMode, addEdgeMode, deleteMode, sourceNode, openEdgeConfigurator, initialPosition, graphState, algorithmMode, selectedAlgorithm, setTooltipContent, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText, isAnimationReady])
 
   useEffect(() => {
     if (!addEdgeMode) {

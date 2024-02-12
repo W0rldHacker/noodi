@@ -8,7 +8,7 @@ interface NodeConfiguratorModalProps {
 }
 
 const NodeConfiguratorModal: React.FC<NodeConfiguratorModalProps> = ({ node, close }) => {
-  const { saveState } = useGraphEditor();
+  const { saveGraph, saveState } = useGraphEditor();
   const [nodeTitle, setNodeTitle] = useState("");
 
   useEffect(() => {
@@ -18,6 +18,7 @@ const NodeConfiguratorModal: React.FC<NodeConfiguratorModalProps> = ({ node, clo
   const saveNodeTitle = () => {
     saveState();
     node!.data({ title: nodeTitle ? nodeTitle : node?.id() });
+    saveGraph();
     close();
   }
 

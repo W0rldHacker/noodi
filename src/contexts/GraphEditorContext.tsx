@@ -49,6 +49,7 @@ interface GraphEditorContextProps {
   toggleDeleteMode: () => void;
   undoCount: number;
   redoCount: number;
+  saveGraph: () => void;
   saveState: (graphState?: object) => void;
   undo: () => void;
   redo: () => void;
@@ -345,6 +346,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
   }
 
+  const saveGraph = () => {
+    const state = cyRef.current!.json() as CyState;
+    delete state.style;
+    delete state.zoom;
+    delete state.pan;
+    localStorage.setItem('userGraph', JSON.stringify(state));
+  };
+
   const saveState = (graphState?: object) => {
     const state: CyState = graphState ? graphState as CyState : cyRef.current!.json() as CyState;
     delete state.style;
@@ -371,6 +380,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       setUndoCount(undoStack.current.length);
       setRedoCount(redoStack.current.length);
       applyStyles();
+      saveGraph();
     }
   };
 
@@ -386,12 +396,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       setUndoCount(undoStack.current.length);
       setRedoCount(redoStack.current.length);
       applyStyles();
+      saveGraph();
     }
   };
 
   const clearGraph = () => {
     saveState();
     cyRef.current!.elements().remove();
+    saveGraph();
   }
 
   const applyStyles = () => {
@@ -608,6 +620,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     toggleDeleteMode,
     undoCount,
     redoCount,
+    saveGraph,
     saveState,
     undo,
     redo,

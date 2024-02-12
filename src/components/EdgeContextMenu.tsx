@@ -16,7 +16,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   edge,
   close,
 }) => {
-  const { saveState, cyRef } = useGraphEditor();
+  const { saveGraph, saveState, cyRef } = useGraphEditor();
   const { openEdgeConfigurator } = useEdgeConfigurator();
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +40,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const deleteNode = () => {
     saveState();
     edge!.remove();
+    saveGraph();
     close();
   };
 

@@ -26,7 +26,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
   const displayedEdgeWeight = useRef("");
   const [edgeWeightString, setEdgeWeightString] = useState("");
   const [isOriented, setIsOriented] = useState(false);
-  const { saveState } = useGraphEditor();
+  const { saveGraph, saveState } = useGraphEditor();
 
   useEffect(() => {
     setEdgeTitle(defaultConfig.edgeTitle);
@@ -117,6 +117,8 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
         break;
       }
     }
+
+    saveGraph();
 
     close();
   };

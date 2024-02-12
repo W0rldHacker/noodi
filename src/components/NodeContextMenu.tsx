@@ -16,7 +16,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   node,
   close,
 }) => {
-  const { saveState } = useGraphEditor();
+  const { saveGraph, saveState } = useGraphEditor();
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +54,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   const deleteNode = () => {
     saveState();
     node!.remove();
+    saveGraph();
     close();
   };
 
