@@ -1,6 +1,6 @@
 {
   "name": "noodi",
-  "version": "0.1.0",
+  "version": "Sun 0.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,19 +9,29 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^1.6.7",
+    "cytoscape": "^3.28.1",
+    "framer-motion": "^10.18.0",
+    "marked": "^11.2.0",
+    "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.0.4"
+    "react-icons": "^4.12.0",
+    "theme-change": "^2.5.0",
+    "typeit-react": "^2.7.1"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/cytoscape": "^3.19.16",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "daisyui": "^4.5.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "eslint": "^8",
-    "eslint-config-next": "14.0.4"
+    "typescript": "^5"
   }
 }

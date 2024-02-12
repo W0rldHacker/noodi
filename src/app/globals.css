@@ -2,26 +2,166 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+[data-theme='light'] .grid-background {
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, #dce0e8 1px, transparent 1px),
+    linear-gradient(to bottom, #dce0e8 1px, transparent 1px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+[data-theme='dark'] .grid-background {
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, #292c3c 1px, transparent 1px),
+    linear-gradient(to bottom, #292c3c 1px, transparent 1px);
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+[data-theme='light'] *::-webkit-scrollbar-track {
+  background: #e6e9ef;
+}
+
+[data-theme='light'] *::-webkit-scrollbar-thumb {
+  background: #bcc0cc;
+}
+
+[data-theme='light'] *::-webkit-scrollbar-thumb:hover {
+  background: #9ca0b0;
+}
+
+[data-theme='dark'] *::-webkit-scrollbar-track {
+  background: #292c3c;
+}
+
+[data-theme='dark'] *::-webkit-scrollbar-thumb {
+  background: #51576d;
+}
+
+[data-theme='dark'] *::-webkit-scrollbar-thumb:hover {
+  background: #737994;
+}
+
+.range::-webkit-slider-thumb {
+  width: 0.16rem;
+  color: transparent;
+  box-shadow: none;
+}
+
+[data-theme='light'] .range-zoom::-webkit-slider-thumb {
+  background-color: oklch(var(--bc));
+}
+
+[data-theme='dark'] .range-zoom::-webkit-slider-thumb {
+  background-color: #c6d0f5;
+}
+
+[data-theme='light'] .range-speed::-webkit-slider-runnable-track {
+  @apply bg-base-200 bg-opacity-50;
+}
+
+[data-theme='dark'] .range-zoom::-webkit-slider-thumb {
+  background-color: #c6d0f5;
+}
+
+.menu-horizontal > li > *:hover {
+  @apply bg-base-content bg-opacity-25;
+}
+
+.menu-horizontal > li > *:active {
+  @apply bg-base-content bg-opacity-50 text-base-200 !important;
+}
+
+.menu-horizontal > li > .button-checked:hover {
+  @apply bg-base-200 bg-opacity-50;
+}
+
+.menu-horizontal > li > .button-checked:active {
+  @apply bg-base-200 bg-opacity-25 text-base-content !important;
+}
+
+.menu-horizontal > li > .disabled-tooltip:hover {
+  @apply bg-transparent;
+}
+
+.menu-horizontal > li > .disabled-tooltip:active {
+  @apply bg-transparent !important;
+}
+
+.menu-horizontal > li > * {
+  @apply px-2;
+}
+
+.noodi-divider {
+  @apply w-[1px] h-7 mx-1 bg-base-300 bg-opacity-50;
+}
+
+.icon-md {
+  @apply px-1 py-1 !important;
+}
+
+.button-checked {
+  @apply bg-base-200 text-base-content;
+}
+
+.button-disabled {
+  @apply text-base-200 text-opacity-50 pointer-events-none;
+}
+
+.tooltip-unchecked {
+  transform: translateX(-9rem);
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.menu-btn {
+  @apply p-0 w-9 h-9 flex items-center justify-center text-base-content text-opacity-50 duration-0;
+}
+
+.menu-btn:hover {
+  @apply text-opacity-100 bg-base-200;
+}
+
+.menu-btn:active {
+  @apply bg-base-200 !important;
+}
+
+::selection {
+  @apply text-base-100 bg-base-content;
+}
+
+.algorithm-button-checked {
+  @apply bg-base-content bg-opacity-70 text-base-200;
+}
+
+.algorithm-button-checked:hover {
+  @apply bg-base-content bg-opacity-85;
+}
+
+.algorithm-button-checked:active {
+  @apply bg-base-content bg-opacity-100 text-base-200 !important;
+}
+
+[data-typeit-id]:before {
+  display: none !important;
+}
+
+.prose :where(a):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
+  @apply text-primary text-opacity-75 no-underline font-bold transition-all duration-150 hover:text-opacity-100;
+}
+
+.long-text-tooltip::before {
+  content: var(--tw-content);
+  --tw-content: "Скорость воспроизведения\A(ЛКМ/🠕 - ускорить, ПКМ/🠗 - замедлить)";
+  white-space: pre;
 }
