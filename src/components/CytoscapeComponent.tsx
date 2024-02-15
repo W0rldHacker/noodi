@@ -204,6 +204,28 @@ const CytoscapeComponent: React.FC = () => {
                 })
               break;
             }
+            case "dfs": {
+              const graph = cyRef.current!.json();
+              const startNodeId = event.target.id();
+              setIsLoading(true);
+              axios.post("/api/dfs", { graph: graph, startNodeId: startNodeId})
+                .then(response => {
+                  const { frames, shortResultText, resultText, stepByStepExplanation } = response.data;
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch(error => {
+                  setIsLoading(false);
+                  console.error('Ошибка запроса:', error);
+                })
+              break;
+            }
           }
         }
       }

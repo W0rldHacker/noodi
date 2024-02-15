@@ -53,10 +53,10 @@ const Toolbar: React.FC = () => {
       } else if (!algorithmMode && event.ctrlKey && (event.key === "d" || event.key === "в")) {
         event.preventDefault();
         toggleDeleteMode();
-      } else if (event.ctrlKey && (event.key === "z" || event.key === "я")) {
+      } else if (!algorithmMode && event.ctrlKey && (event.key === "z" || event.key === "я")) {
         event.preventDefault();
         undo();
-      } else if (event.ctrlKey && (event.key === "y" || event.key === "н")) {
+      } else if (!algorithmMode && event.ctrlKey && (event.key === "y" || event.key === "н")) {
         event.preventDefault();
         redo();
       }

@@ -128,7 +128,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Поиск в глубину</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "dfs" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("dfs")}>
+                      Поиск в глубину
+                    </button>
+                  </a>
+                </li>
                 <li><a>Алгоритм Дейкстры</a></li>
                 <li><a>Алгоритм Беллмана-Форда</a></li>
                 <li><a>Алгоритм Флойда</a></li>

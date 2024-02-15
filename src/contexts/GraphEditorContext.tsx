@@ -131,6 +131,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const maxHistorySize = 20;
   const algorithmTooltips: StringKeyValue = {
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
+    dfs: "Чтобы запустить алгоритм поиска в глубину, выберите начальную вершину, с которой будет начинаться поиск",
   }
 
   const toggleGrid = () => {
@@ -176,6 +177,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     setAddEdgeMode(false);
     setDeleteMode(false);
     if (selectedAlgorithm.current !== algorithmSlug) {
+      if (selectedAlgorithm.current !== "") {
+        stopAnimation(false);
+      }
       selectedAlgorithm.current = algorithmSlug;
       setTooltipContent(algorithmTooltips[algorithmSlug]);
     }
@@ -273,6 +277,43 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateDFS = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const differenceMessage = switchDirection === "back" ? findStateChanges(currentState, prevState, index) : findStateChanges(prevState, currentState, index);
+
+    differenceMessage.addedNodes.forEach(node => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    });
+    differenceMessage.removedNodes.forEach(node => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    });
+    differenceMessage.addedEdges.forEach(edge => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    });
+    differenceMessage.removedEdges.forEach(edge => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    });
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      setIsAnimationEnded(true);
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateDFS(index + 1);
+        } else {
+          animateDFS(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -284,6 +325,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(isAnimationEnded ? 0 : animationFrame.current);
+        break;
+      }
+      case "dfs": {
+        animateDFS(isAnimationEnded ? 0 : animationFrame.current);
         break;
       }
     }
@@ -306,6 +351,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         stopBFS(needDisable);
         break;
       }
+      case "dfs": {
+        stopDFS(needDisable);
+        break;
+      }
     }
   };
 
@@ -313,6 +362,13 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     cyRef.current!.elements().removeClass("visited");
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["bfs"]);
+    }
+  }
+
+  const stopDFS = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["dfs"]);
     }
   }
 
@@ -328,6 +384,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateBFS(animationFrame.current, true);
         break;
       }
+      case "dfs": {
+        animateDFS(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -339,6 +399,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(animationFrame.current, true, "back");
+        break;
+      }
+      case "dfs": {
+        animateDFS(animationFrame.current, true, "back");
         break;
       }
     }
