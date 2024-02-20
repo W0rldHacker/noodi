@@ -92,7 +92,7 @@ ${stepByStepExplanation
 - **Задействовано рёбер:** ${visitedEdgesCount}
 - **Количество шагов алгоритма:** ${steps}
 
-**Узнать больше об алгоритме поиска в ширину можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Поиск_в_глубину).**`;
+**Узнать больше об алгоритме поиска в глубину можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Поиск_в_глубину).**`;
 
     return { frames, shortResultText, resultText, stepByStepExplanation };
   }

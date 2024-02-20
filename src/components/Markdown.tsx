@@ -3,10 +3,11 @@ import { marked } from "marked";
 
 interface MarkdownProps {
   markdown: string;
+  ref?: React.RefObject<HTMLDivElement>;
   className?: string;
 }
 
-const Markdown: React.FC<MarkdownProps> = ({ markdown, className }) => {
+const Markdown: React.FC<MarkdownProps> = ({ markdown, ref, className }) => {
   const renderer = new marked.Renderer();
 
   renderer.link = (href, title, text) => {

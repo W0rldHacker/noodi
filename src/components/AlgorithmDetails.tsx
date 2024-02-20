@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Markdown from "./Markdown";
 import TypeIt from "typeit-react";
 

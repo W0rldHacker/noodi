@@ -54,6 +54,8 @@ interface GraphEditorContextProps {
   undo: () => void;
   redo: () => void;
   clearGraph: () => void;
+  sourceNode: string;
+  setSourceNode: (content: string) => void;
   algorithmMode: boolean;
   selectedAlgorithm: React.MutableRefObject<string>;
   enableAlgorithmMode: (algorithmSlug: string) => void;
@@ -118,6 +120,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const [stepByStepExplanation, setStepByStepExplanation] = useState<string[]>([]);
   const [resultText, setResultText] = useState("");
   const [manualSwitch, setManualSwitch] = useState(false);
+  const [sourceNode, setSourceNode] = useState("");
   //const [animationFrames, setAnimationFrames] = useState<State[]>([]);
   const cyRef = useRef<Core | null>(null);
   const undoStack = useRef<CyState[]>([]);
@@ -125,13 +128,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const selectedAlgorithm = useRef("");
   const isAnimationPlaying = useRef(false);
   const animationFrame = useRef(0);
-  const animationFrames = useRef<State[]>([]);
+  const animationFrames = useRef<any[]>([]);
   const animationSpeed = useRef(speedMultipliers[1]);
   const loopedMode = useRef(false);
   const maxHistorySize = 20;
   const algorithmTooltips: StringKeyValue = {
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
     dfs: "Чтобы запустить алгоритм поиска в глубину, выберите начальную вершину, с которой будет начинаться поиск",
+    dijkstra: "Чтобы запустить алгоритм Дейкстры, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь",
   }
 
   const toggleGrid = () => {
@@ -246,7 +250,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     animationFrame.current = index;
     const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
     const currentState = animationFrames.current[index];
-    const differenceMessage = switchDirection === "back" ? findStateChanges(currentState, prevState, index) : findStateChanges(prevState, currentState, index);
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+    const differenceMessage = switchDirection === "back" ? findStateChanges(nextState, currentState, index) : findStateChanges(prevState, currentState, index);
 
     differenceMessage.addedNodes.forEach(node => {
       cyRef.current!.getElementById(node).addClass("visited");
@@ -283,7 +288,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     animationFrame.current = index;
     const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
     const currentState = animationFrames.current[index];
-    const differenceMessage = switchDirection === "back" ? findStateChanges(currentState, prevState, index) : findStateChanges(prevState, currentState, index);
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+    const differenceMessage = switchDirection === "back" ? findStateChanges(nextState, currentState, index) : findStateChanges(prevState, currentState, index);
+    //const differenceMessage = switchDirection === "back" ? findStateChanges(currentState, prevState, index) : findStateChanges(prevState, currentState, index);
 
     differenceMessage.addedNodes.forEach(node => {
       cyRef.current!.getElementById(node).addClass("visited");
@@ -314,6 +321,82 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateDijkstra = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(nextState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+      if (nextState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(nextState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    } else {
+      if (prevState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(prevState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+      if (prevState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(prevState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    }
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedNodes = currentState.fullyProcessedNodes.filter(
+        (x: string) => !prevState.fullyProcessedNodes.includes(x)
+      );
+      const removedNodes = prevState.fullyProcessedNodes.filter(
+        (x: string) => !currentState.fullyProcessedNodes.includes(x)
+      );
+
+      return { addedNodes, removedNodes };
+    }
+
+    const { addedNodes, removedNodes } = switchDirection === "back" ? findDifferences(nextState, currentState, index) : findDifferences(prevState, currentState, index);
+    
+    addedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("processed");
+    })
+    removedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("processed");
+    })
+    
+    if (currentState.pathNodes.length > 0 && currentState.pathEdges.length > 0) {
+      currentState.pathNodes.forEach((node: string) => {
+        cyRef.current!.getElementById(node).addClass("visited");
+      })
+      currentState.pathEdges.forEach((edge: string) => {
+        cyRef.current!.getElementById(edge).addClass("visited");
+      })
+    }
+    else {
+      cyRef.current!.elements().removeClass("visited");
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      setIsAnimationEnded(true);
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateDijkstra(index + 1);
+        } else {
+          animateDijkstra(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -330,6 +413,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       case "dfs": {
         animateDFS(isAnimationEnded ? 0 : animationFrame.current);
         break;
+      }
+      case "dijkstra": {
+        animateDijkstra(isAnimationEnded ? 0 : animationFrame.current);
       }
     }
   };
@@ -355,6 +441,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         stopDFS(needDisable);
         break;
       }
+      case "dijkstra": {
+        stopDijkstra(needDisable);
+        break;
+      }
     }
   };
 
@@ -372,13 +462,27 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopDijkstra = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("selected");
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.nodes().removeClass("processed");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["dijkstra"]);
+    }
+  }
+
   const stepForward = () => {
     pauseAnimation();
     if (!manualSwitch) {
       setManualSwitch(true);
     }
     animationFrame.current = animationFrame.current >= animationFrames.current.length - 1 ? 0 : animationFrame.current + 1;
-    setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
+    if (animationFrame.current + 1 >= animationFrames.current.length) {
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText ? "  \n" + resultText : ""}`)
+    } else {
+      setTooltipContent(stepByStepExplanation[animationFrame.current]);
+    }
+    //setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(animationFrame.current, true);
@@ -386,6 +490,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "dfs": {
         animateDFS(animationFrame.current, true);
+        break;
+      }
+      case "dijkstra": {
+        animateDijkstra(animationFrame.current, true);
         break;
       }
     }
@@ -396,6 +504,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     if (!manualSwitch) {
       setManualSwitch(true);
     }
+    animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
+    setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(animationFrame.current, true, "back");
@@ -405,9 +515,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateDFS(animationFrame.current, true, "back");
         break;
       }
+      case "dijkstra": {
+        animateDijkstra(animationFrame.current, true, "back");
+        break;
+      }
     }
-    animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
-    setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
+    //animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
   }
 
   const saveGraph = () => {
@@ -570,6 +683,30 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             color: "#d20f39",
           }
         },
+        {
+          selector: "node.processing",
+          style: {
+            "background-color": "#fe640b",
+            "border-color": "#fe640b",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#fe640b",
+          }
+        },
+        {
+          selector: "edge.processing",
+          style: {
+            "line-color": "#fe640b",
+            "target-arrow-color": "#fe640b",
+            color: "#fe640b",
+          }
+        },
+        {
+          selector: "node.processed",
+          style: {
+            "background-color": "#bcc0cc",
+            "border-color": "#bcc0cc",
+            color: "#4c4f69",
+          }
+        },
       ];
     } else {
       return [
@@ -662,7 +799,31 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             "target-arrow-color": "#e78284",
             color: "#e78284",
           }
-        }
+        },
+        {
+          selector: "node.processing",
+          style: {
+            "background-color": "#ef9f76",
+            "border-color": "#ef9f76",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#ef9f76",
+          }
+        },
+        {
+          selector: "edge.processing",
+          style: {
+            "line-color": "#ef9f76",
+            "target-arrow-color": "#ef9f76",
+            color: "#ef9f76",
+          }
+        },
+        {
+          selector: "node.processed",
+          style: {
+            "background-color": "#51576d",
+            "border-color": "#51576d",
+            color: "#c6d0f5",
+          }
+        },
       ];
     }
   }, []);
@@ -689,6 +850,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     undo,
     redo,
     clearGraph,
+    sourceNode,
+    setSourceNode,
     algorithmMode,
     selectedAlgorithm,
     enableAlgorithmMode,
