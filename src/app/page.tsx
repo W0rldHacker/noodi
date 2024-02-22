@@ -52,7 +52,7 @@ export default function Home() {
           </label>
         </div>
       </div>
-      <div className="drawer-side w-72 relative overflow-x-hidden overflow-y-hidden hover:overflow-y-auto">
+      <div className="drawer-side w-72 relative overflow-x-hidden overflow-y-hidden hover:overflow-y-auto z-10">
         <ul className="menu p-4 pr-6 w-72 min-h-full bg-base-200 text-base-content">
           <li className="w-full flex items-center justify-center">
             <svg

@@ -63,37 +63,6 @@ const CytoscapeComponent: React.FC = () => {
     
     loadGraph(cyRef.current);
 
-    cyRef.current.nodes().forEach(node => {
-      const nodeId = node.id();
-      const existingLabelId = `label-for-${nodeId}`;
-      let label = document.getElementById(existingLabelId);
-      const description = node.data('title');
-
-      if (!label) {
-        label = document.createElement('div');
-        label.setAttribute('id', existingLabelId);
-        label.style.position = "absolute";
-        label.classList.add('node-description');
-        label.textContent = description;
-        document.body.appendChild(label);
-      }
-    
-      // Функция для обновления позиции описания
-      function updateLabelPosition() {
-        const renderedPosition = node.renderedPosition();
-        const containerOffset = document.getElementById('cy')!.getBoundingClientRect();
-        const offset = 40;
-        label!.style.left = `${renderedPosition.x + containerOffset.left}px`;
-        label!.style.top = `${renderedPosition.y + offset + containerOffset.top}px`;
-      }
-    
-      updateLabelPosition();
-    
-      node.on("position", updateLabelPosition);
-      cyRef.current!.on('pan zoom', updateLabelPosition);
-    });
-
-
     /*let node = cyRef.current.nodes().first();
 
     console.log(node);

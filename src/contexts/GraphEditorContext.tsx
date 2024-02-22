@@ -131,6 +131,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const animationFrames = useRef<any[]>([]);
   const animationSpeed = useRef(speedMultipliers[1]);
   const loopedMode = useRef(false);
+  const nodeLabels = useRef<{ [key: string]: HTMLElement }>({});
   const maxHistorySize = 20;
   const algorithmTooltips: StringKeyValue = {
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
@@ -180,6 +181,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     setAddNodeMode(false);
     setAddEdgeMode(false);
     setDeleteMode(false);
+    switch(algorithmSlug) {
+      case "dijkstra": {
+        createLabels();
+      }
+    }
     if (selectedAlgorithm.current !== algorithmSlug) {
       if (selectedAlgorithm.current !== "") {
         stopAnimation(false);
@@ -193,8 +199,44 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     setAlgorithmMode(false);
     setTooltipContent("");
     stopAnimation(true);
+    removeLabels();
     selectedAlgorithm.current = "";
   };
+
+  const createLabels = () => {
+    cyRef.current!.nodes().forEach(node => {
+      const nodeId = node.id();
+      const existingLabelId = `label-for-${nodeId}`;
+      //let label = document.getElementById(existingLabelId);
+      //const description = node.data('title');
+
+      if (!nodeLabels.current[existingLabelId]) {
+        const description = node.data('title');
+        const label = document.createElement('div');
+        label.setAttribute('id', existingLabelId);
+        label.style.position = "absolute";
+        label.style.zIndex = "-10";
+        label.classList.add('node-description');
+        label.textContent = description;
+        document.body.appendChild(label);
+        nodeLabels.current[existingLabelId] = label;
+      }
+
+      function updateLabelPosition() {
+        const label = nodeLabels.current[existingLabelId];
+        const renderedPosition = node.renderedPosition();
+        const containerOffset = document.getElementById('cy')!.getBoundingClientRect();
+        const offset = 40;
+        label.style.left = `${renderedPosition.x + containerOffset.left}px`;
+        label.style.top = `${renderedPosition.y + offset + containerOffset.top}px`;
+      }
+    
+      updateLabelPosition();
+    
+      node.on("position", updateLabelPosition);
+      cyRef.current!.on('pan zoom resize', updateLabelPosition);
+    });
+  }
 
   const increaseMultiplier = () => {
     const currentIndex = speedMultipliers.indexOf(animationSpeed.current);
@@ -466,6 +508,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     cyRef.current!.nodes().removeClass("selected");
     cyRef.current!.elements().removeClass("processing");
     cyRef.current!.nodes().removeClass("processed");
+    cyRef.current!.elements().removeClass("visited");
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["dijkstra"]);
     }
