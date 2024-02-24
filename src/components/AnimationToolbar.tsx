@@ -134,7 +134,7 @@ const AnimationToolbar: React.FC = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
           transition={{ delay: 0.15, duration: 0.15 }}
-          className={`absolute bottom-16 flex justify-center ${
+          className={`absolute bottom-16 flex justify-center z-10 ${
             checked ? "" : "left-0 w-full"
           }`}
         >

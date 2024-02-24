@@ -30,7 +30,7 @@ const ZoomSlider: React.FC= () => {
   };
 
   return (
-    <div className="absolute -right-32 -rotate-90 h-4 flex items-center justify-center gap-4">
+    <div className="absolute -right-32 -rotate-90 h-4 flex items-center justify-center gap-4 z-10">
       <span className="h-full text-2xl text-base-content pb-7 rotate-90">-</span>
       <input
         type="range"

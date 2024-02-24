@@ -116,7 +116,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   //const [isAnimationPlaying, setIsAnimationPlaying] = useState(false);
   const [algorithmDetails, setAlgorithmDetails] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isAnimationEnded, setIsAnimationEnded] = useState(false);
+  //const [isAnimationEnded, setIsAnimationEnded] = useState(false);
   const [stepByStepExplanation, setStepByStepExplanation] = useState<string[]>([]);
   const [resultText, setResultText] = useState("");
   const [manualSwitch, setManualSwitch] = useState(false);
@@ -127,11 +127,13 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const redoStack = useRef<CyState[]>([]);
   const selectedAlgorithm = useRef("");
   const isAnimationPlaying = useRef(false);
+  const isAnimationEnded = useRef(false);
   const animationFrame = useRef(0);
   const animationFrames = useRef<any[]>([]);
   const animationSpeed = useRef(speedMultipliers[1]);
   const loopedMode = useRef(false);
   const nodeLabels = useRef<{ [key: string]: HTMLElement }>({});
+  const updateLabelPositionRefs = useRef<{ [key: string]: () => void }>({});
   const maxHistorySize = 20;
   const algorithmTooltips: StringKeyValue = {
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
@@ -182,8 +184,17 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     setAddEdgeMode(false);
     setDeleteMode(false);
     switch(algorithmSlug) {
+      case "bfs": {
+        removeLabels();
+        break;
+      }
+      case "dfs": {
+        removeLabels();
+        break;
+      }
       case "dijkstra": {
         createLabels();
+        break;
       }
     }
     if (selectedAlgorithm.current !== algorithmSlug) {
@@ -207,17 +218,13 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     cyRef.current!.nodes().forEach(node => {
       const nodeId = node.id();
       const existingLabelId = `label-for-${nodeId}`;
-      //let label = document.getElementById(existingLabelId);
-      //const description = node.data('title');
 
       if (!nodeLabels.current[existingLabelId]) {
-        const description = node.data('title');
+        //const description = node.data('title');
         const label = document.createElement('div');
         label.setAttribute('id', existingLabelId);
-        label.style.position = "absolute";
-        label.style.zIndex = "-10";
         label.classList.add('node-description');
-        label.textContent = description;
+        label.textContent = "";
         document.body.appendChild(label);
         nodeLabels.current[existingLabelId] = label;
       }
@@ -226,15 +233,42 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         const label = nodeLabels.current[existingLabelId];
         const renderedPosition = node.renderedPosition();
         const containerOffset = document.getElementById('cy')!.getBoundingClientRect();
-        const offset = 40;
+        const zoom = cyRef.current!.zoom();
+        const offset = 28 * zoom;
+        const baseFontSize = 12;
         label.style.left = `${renderedPosition.x + containerOffset.left}px`;
         label.style.top = `${renderedPosition.y + offset + containerOffset.top}px`;
+        label.style.fontSize = `${baseFontSize * zoom}px`;
       }
+
+      updateLabelPositionRefs.current[existingLabelId] = updateLabelPosition;
     
       updateLabelPosition();
     
-      node.on("position", updateLabelPosition);
+      cyRef.current!.on("position", "node", updateLabelPosition);
       cyRef.current!.on('pan zoom resize', updateLabelPosition);
+    });
+  }
+
+  const removeLabels = () => {
+    cyRef.current!.nodes().forEach(node => {
+      const nodeId = node.id();
+      const existingLabelId = `label-for-${nodeId}`;
+
+      if (nodeLabels.current[existingLabelId]) {
+        const label = document.getElementById(existingLabelId);
+        if (label) {
+          document.body.removeChild(label);
+          delete nodeLabels.current[existingLabelId];
+        }
+      }
+
+      const updateLabelPosition = updateLabelPositionRefs.current[existingLabelId];
+      if (updateLabelPosition) {
+        cyRef.current!.off("position", "node", updateLabelPosition);
+        cyRef.current!.off('pan zoom resize', updateLabelPosition);
+        delete updateLabelPositionRefs.current[existingLabelId];
+      }
     });
   }
 
@@ -310,7 +344,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
 
     if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
       pauseAnimation();
-      setIsAnimationEnded(true);
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
     }
 
     if (isAnimationPlaying.current) {
@@ -349,7 +385,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
 
     if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
       pauseAnimation();
-      setIsAnimationEnded(true);
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
     }
 
     if (isAnimationPlaying.current) {
@@ -423,9 +461,33 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       cyRef.current!.elements().removeClass("visited");
     }
 
+    for (const key in currentState.paths) {
+      if (currentState.paths.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.pathUpdateInfo && currentState.nextNode === key) {
+            label.innerHTML = currentState.pathUpdateInfo;
+          } else {
+            label.innerHTML = currentState.paths[key];
+          }
+        }
+      }
+    }
+
+    /*if (currentState.pathUpdateInfo) {
+      const labelId = `label-for-${currentState.nextNode}`
+      const label = nodeLabels.current[labelId];
+      if (label) {
+        label.innerHTML = currentState.pathUpdateInfo;
+      }
+    }*/
+
     if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
       pauseAnimation();
-      setIsAnimationEnded(true);
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
     }
 
     if (isAnimationPlaying.current) {
@@ -442,22 +504,21 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
-    setIsAnimationEnded(false);
     if (manualSwitch) {
       setTooltipContent(resultText);
       setManualSwitch(false);
     }
     switch (selectedAlgorithm.current) {
       case "bfs": {
-        animateBFS(isAnimationEnded ? 0 : animationFrame.current);
+        animateBFS(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
       case "dfs": {
-        animateDFS(isAnimationEnded ? 0 : animationFrame.current);
+        animateDFS(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
       case "dijkstra": {
-        animateDijkstra(isAnimationEnded ? 0 : animationFrame.current);
+        animateDijkstra(isAnimationEnded.current ? 0 : animationFrame.current);
       }
     }
   };
@@ -509,9 +570,16 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     cyRef.current!.elements().removeClass("processing");
     cyRef.current!.nodes().removeClass("processed");
     cyRef.current!.elements().removeClass("visited");
+    clearLabels();
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["dijkstra"]);
     }
+  }
+
+  const clearLabels = () => {
+    Object.values(nodeLabels.current).forEach(label => {
+      label.innerHTML = "";
+    });
   }
 
   const stepForward = () => {
@@ -548,7 +616,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       setManualSwitch(true);
     }
     animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
-    setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
+    if (animationFrame.current - 1 <= 0) {
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText ? "  \n" + resultText : ""}`)
+    } else {
+      setTooltipContent(stepByStepExplanation[animationFrame.current]);
+    }
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(animationFrame.current, true, "back");

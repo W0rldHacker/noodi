@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       frames.push({
         fullyProcessedNodes: Array.from(visited),
         currentNode: nodeId,
-        //nextNode: "",
+        nextNode: "",
         currentEdge: "",
         paths: Object.keys(distances).reduce(
           (acc: { [key: string]: string }, key) => {
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
             frames.push({
               fullyProcessedNodes: Array.from(visited),
               currentNode: nodeId,
-              //nextNode: nextNodeId,
+              nextNode: nextNodeId,
               currentEdge: edge.id(),
               paths: Object.keys(distances).reduce(
                 (acc: { [key: string]: string }, key) => {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
                 },
                 {}
               ),
-              pathUpdateInfo: pathComparison,
+              pathUpdateInfo: "",
               pathNodes: [],
               pathEdges: [],
             });
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
               frames.push({
                 fullyProcessedNodes: Array.from(visited),
                 currentNode: nodeId,
-                //nextNode: nextNodeId,
+                nextNode: nextNodeId,
                 currentEdge: edge.id(),
                 paths: Object.keys(distances).reduce(
                   (acc: { [key: string]: string }, key) => {
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
     frames.push({
       fullyProcessedNodes: [],
       currentNode: "",
-      //nextNode: "",
+      nextNode: "",
       currentEdge: "",
       paths: Object.keys(distances).reduce(
         (acc: { [key: string]: string }, key) => {

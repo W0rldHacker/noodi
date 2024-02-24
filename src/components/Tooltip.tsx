@@ -43,7 +43,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content, isLoading }) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
-            className={`absolute top-8 text-xs font-bold flex justify-center ${
+            className={`absolute top-8 text-xs font-bold flex justify-center z-10 ${
               checked ? "" : "left-0 w-full"
             }`}
           >

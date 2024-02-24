@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Open Sans';
+  src: url('../fonts/OpenSans-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 300 800;
+  font-style: normal italic;
+}
+
 [data-theme='light'] .grid-background {
   background-size: 20px 20px;
   background-image: 
@@ -174,5 +181,10 @@ p {
   position: absolute;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  z-index: 10;
+  z-index: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 450;
+  font-style: normal;
+  line-height: 0.875;
+  @apply bg-base-100 text-base-content;
 }
