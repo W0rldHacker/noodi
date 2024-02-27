@@ -142,7 +142,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Алгоритм Беллмана-Форда</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "bellmanFord" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("bellmanFord")}>
+                      Алгоритм Беллмана-Форда
+                    </button>
+                  </a>
+                </li>
                 <li><a>Алгоритм Флойда</a></li>
                 <li><a>Топологическая сортировка</a></li>
                 <li><a>Нахождение компонент связности</a></li>

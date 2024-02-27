@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ru" data-theme="light">
+    <html lang="ru" data-theme="light" className="overflow-hidden">
       <body className={comfortaa.className}>
         <GraphEditorProvider>{children}</GraphEditorProvider>
       </body>

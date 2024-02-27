@@ -1,6 +1,6 @@
 {
   "name": "noodi",
-  "version": "Sun 0.5.3",
+  "version": "Sun 0.5.6",
   "private": true,
   "scripts": {
     "dev": "next dev",

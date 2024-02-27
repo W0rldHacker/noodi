@@ -139,6 +139,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
     dfs: "Чтобы запустить алгоритм поиска в глубину, выберите начальную вершину, с которой будет начинаться поиск",
     dijkstra: "Чтобы запустить алгоритм Дейкстры, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь",
+    bellmanFord: "Чтобы запустить алгоритм Беллмана-Форда, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь"
   }
 
   const toggleGrid = () => {
@@ -196,6 +197,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         createLabels();
         break;
       }
+      case "bellmanFord": {
+        createLabels();
+        break;
+      }
     }
     if (selectedAlgorithm.current !== algorithmSlug) {
       if (selectedAlgorithm.current !== "") {
@@ -219,16 +224,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       const nodeId = node.id();
       const existingLabelId = `label-for-${nodeId}`;
 
-      if (!nodeLabels.current[existingLabelId]) {
-        //const description = node.data('title');
-        const label = document.createElement('div');
-        label.setAttribute('id', existingLabelId);
-        label.classList.add('node-description');
-        label.textContent = "";
-        document.body.appendChild(label);
-        nodeLabels.current[existingLabelId] = label;
-      }
-
       function updateLabelPosition() {
         const label = nodeLabels.current[existingLabelId];
         const renderedPosition = node.renderedPosition();
@@ -241,12 +236,22 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         label.style.fontSize = `${baseFontSize * zoom}px`;
       }
 
-      updateLabelPositionRefs.current[existingLabelId] = updateLabelPosition;
-    
-      updateLabelPosition();
-    
-      cyRef.current!.on("position", "node", updateLabelPosition);
-      cyRef.current!.on('pan zoom resize', updateLabelPosition);
+      if (!nodeLabels.current[existingLabelId]) {
+        //const description = node.data('title');
+        const label = document.createElement('div');
+        label.setAttribute('id', existingLabelId);
+        label.classList.add('node-description');
+        label.textContent = "";
+        document.body.appendChild(label);
+        nodeLabels.current[existingLabelId] = label;
+
+        updateLabelPositionRefs.current[existingLabelId] = updateLabelPosition;
+      
+        updateLabelPosition();
+      
+        cyRef.current!.on("position", "node", updateLabelPosition);
+        cyRef.current!.on('pan zoom resize', updateLabelPosition);
+      }
     });
   }
 
@@ -501,6 +506,78 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateBellmanFord = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(nextState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    } else {
+      if (prevState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(prevState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    }
+    
+    if (currentState.pathNodes.length > 0 && currentState.pathEdges.length > 0) {
+      currentState.pathNodes.forEach((node: string) => {
+        cyRef.current!.getElementById(node).addClass("visited");
+      })
+      currentState.pathEdges.forEach((edge: string) => {
+        cyRef.current!.getElementById(edge).addClass("visited");
+      })
+    }
+    else {
+      cyRef.current!.elements().removeClass("visited");
+    }
+
+    for (const key in currentState.paths) {
+      if (currentState.paths.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.pathUpdateInfo && currentState.nextNode === key) {
+            label.innerHTML = currentState.pathUpdateInfo;
+          } else {
+            label.innerHTML = currentState.paths[key];
+          }
+        }
+      }
+    }
+
+    /*if (currentState.pathUpdateInfo) {
+      const labelId = `label-for-${currentState.nextNode}`
+      const label = nodeLabels.current[labelId];
+      if (label) {
+        label.innerHTML = currentState.pathUpdateInfo;
+      }
+    }*/
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateBellmanFord(index + 1);
+        } else {
+          animateBellmanFord(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -519,6 +596,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "dijkstra": {
         animateDijkstra(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "bellmanFord": {
+        animateBellmanFord(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
       }
     }
   };
@@ -548,6 +630,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         stopDijkstra(needDisable);
         break;
       }
+      case "bellmanFord": {
+        stopBellmanFord(needDisable);
+        break;
+      }
     }
   };
 
@@ -571,8 +657,20 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     cyRef.current!.nodes().removeClass("processed");
     cyRef.current!.elements().removeClass("visited");
     clearLabels();
+    setSourceNode("");
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["dijkstra"]);
+    }
+  }
+
+  const stopBellmanFord = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("selected");
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.elements().removeClass("visited");
+    clearLabels();
+    setSourceNode("");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["bellmanFord"]);
     }
   }
 
@@ -607,6 +705,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateDijkstra(animationFrame.current, true);
         break;
       }
+      case "bellmanFord": {
+        animateBellmanFord(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -632,6 +734,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "dijkstra": {
         animateDijkstra(animationFrame.current, true, "back");
+        break;
+      }
+      case "bellmanFord": {
+        animateBellmanFord(animationFrame.current, true, "back");
         break;
       }
     }

@@ -198,6 +198,13 @@ const CytoscapeComponent: React.FC = () => {
   }, [cyRef])
 
   useEffect(() => {
+    const hasNegativeEdgeWeight = () => {
+      return cyRef.current!.edges().some(edge => {
+        const weight = edge.data("weight");
+        return weight < 0;
+      })
+    };
+
     const handleClick = (event: EventObject) => {
       if (addNodeMode && event.target === cyRef.current) {
         const nodeId = `${getMaxNodeId() + 1}`;
@@ -324,16 +331,61 @@ const CytoscapeComponent: React.FC = () => {
                 setSourceNode(nodeId);
                 event.target.addClass("selected");
               } else {
+                const existsNegativeEdgeWeight = hasNegativeEdgeWeight();
+                if (existsNegativeEdgeWeight) {
+                  unselectNodes();
+                  setSourceNode("");
+                  setTooltipContent("Граф содержит рёбра с отрицательными весами, поэтому выполнить алгоритм Дейкстры невозможно");
+                } else {
+                  const graph = cyRef.current!.json();
+                  setIsLoading(true);
+                  axios
+                    .post("/api/dijkstra", { graph: graph, startNodeId: sourceNode, endNodeId: nodeId })
+                    .then((response) => {
+                      const {
+                        frames,
+                        shortResultText,
+                        resultText,
+                        stepByStepExplanation,
+                      } = response.data;
+                      console.log(frames);
+                      //console.log(stepByStepExplanation);
+                      setTimeout(() => {
+                        unselectNodes();
+                        setSourceNode("");
+                        setIsLoading(false);
+                        setTooltipContent(shortResultText);
+                        setResultText(shortResultText);
+                        setAlgorithmDetails(resultText);
+                        setStepByStepExplanation(stepByStepExplanation);
+                        startAnimation(frames);
+                      }, 1000);
+                    })
+                    .catch((error) => {
+                      setIsLoading(false);
+                      console.error("Ошибка запроса:", error);
+                    });
+                }
+              }
+              break;
+            }
+            case "bellmanFord": {
+              const nodeId = event.target.id();
+              if (!sourceNode) {
+                setSourceNode(nodeId);
+                event.target.addClass("selected");
+              } else {
                 const graph = cyRef.current!.json();
                 setIsLoading(true);
                 axios
-                  .post("/api/dijkstra", { graph: graph, startNodeId: sourceNode, endNodeId: nodeId })
+                  .post("/api/bellmanFord", { graph: graph, startNodeId: sourceNode, endNodeId: nodeId })
                   .then((response) => {
                     const {
                       frames,
                       shortResultText,
                       resultText,
                       stepByStepExplanation,
+                      hasNegativeCycle,
                     } = response.data;
                     console.log(frames);
                     //console.log(stepByStepExplanation);
@@ -342,10 +394,12 @@ const CytoscapeComponent: React.FC = () => {
                       setSourceNode("");
                       setIsLoading(false);
                       setTooltipContent(shortResultText);
-                      setResultText(shortResultText);
-                      setAlgorithmDetails(resultText);
-                      setStepByStepExplanation(stepByStepExplanation);
-                      startAnimation(frames);
+                      if (!hasNegativeCycle) {
+                        setResultText(shortResultText);
+                        setAlgorithmDetails(resultText);
+                        setStepByStepExplanation(stepByStepExplanation);
+                        startAnimation(frames);
+                      }
                     }, 1000);
                   })
                   .catch((error) => {

@@ -75,7 +75,7 @@ export async function POST(req: Request) {
             let weight = edge.data("weight");
             let alt = distance + weight;
 
-            let pathComparison = `${distances[nodeId] === Infinity ? "∞" : distances[nodeId]} + ${weight} ${
+            let pathComparsion = `${distances[nodeId] === Infinity ? "∞" : distances[nodeId]} + ${weight} ${
               alt < distances[nextNodeId] ? "<" : ">"
             } ${
               distances[nextNodeId] === Infinity ? "∞" : distances[nextNodeId]
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
               pathNodes: [],
               pathEdges: [],
             });
-            stepByStepExplanation.push(`Рассматриваем ребро "${edgeTitle}" ведущее к вершине "${nextNodeTitle}". Текущее расстояние: ${distances[targetId] === Infinity ? "∞" : distances[targetId]}, новое расстояние: ${alt === Infinity ? "∞" : alt} (${pathComparison})`);
+            stepByStepExplanation.push(`Рассматриваем ребро "${edgeTitle}" ведущее к вершине "${nextNodeTitle}". Текущее расстояние: ${distances[targetId] === Infinity ? "∞" : distances[targetId]}, новое расстояние: ${alt === Infinity ? "∞" : alt} (${pathComparsion})`);
 
             if (alt < distances[nextNodeId]) {
               frames.push({
@@ -118,14 +118,14 @@ export async function POST(req: Request) {
                   },
                   {}
                 ),
-                pathUpdateInfo: pathComparison,
+                pathUpdateInfo: pathComparsion,
                 pathNodes: [],
                 pathEdges: [],
               });
               distances[nextNodeId] = alt;
               prev[nextNodeId] = nodeId;
               pq.enqueue(nextNodeId, alt);
-              stepByStepExplanation.push(`Так как ${pathComparison}, обновляем расстояние до вершины "${targetId}" до ${alt}.`)
+              stepByStepExplanation.push(`Так как ${pathComparsion}, обновляем расстояние до вершины "${targetId}" до ${alt}.`)
 
               /*stepByStepExplanation.push(
                 `Обновляем расстояние до вершины **${nextNodeId}** до **${alt}**.`
@@ -153,8 +153,12 @@ export async function POST(req: Request) {
     let pathToEnd = reconstructPath(prev, endNodeId);
     let pathTitles = pathToEnd.map((nodeId) => `"${cy.getElementById(nodeId).data("title")}"`);
     let pathString = pathToEnd.includes(startNodeId) ? pathTitles.join(" 🠖 ") : "не существует";
+    let nodes = cy.nodes();
+    let sortedNodes = nodes.sort((a, b) =>
+      Number(a.id()) - Number(b.id())
+    );
     let allShortPaths = "";
-    cy.nodes().forEach((node) => {
+    sortedNodes.forEach((node) => {
       let nodeId = node.id();
       let nodeTitle = node.data("title");
       if (distances[nodeId] !== Infinity) {
