@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import axios from "axios";
 import { Core, Stylesheet, ElementDefinition, NodeSingular, EdgeSingular, Position } from "cytoscape";
 
 interface CyState {
@@ -67,6 +68,10 @@ interface GraphEditorContextProps {
   isPlaying: boolean;
   animationSpeed: React.MutableRefObject<number>;
   loopedMode: React.MutableRefObject<boolean>;
+  isJustStartAlgorithm: boolean;
+  isLoading: boolean;
+  setIsLoading: (value: boolean) => void;
+  startAlgorithm: () => void;
   toggleLoopedMode: () => void;
   increaseMultiplier: () => void;
   decreaseMultiplier: () => void;
@@ -121,6 +126,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const [resultText, setResultText] = useState("");
   const [manualSwitch, setManualSwitch] = useState(false);
   const [sourceNode, setSourceNode] = useState("");
+  const [isJustStartAlgorithm, setIsJustStartAlgorithm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   //const [animationFrames, setAnimationFrames] = useState<State[]>([]);
   const cyRef = useRef<Core | null>(null);
   const undoStack = useRef<CyState[]>([]);
@@ -139,7 +146,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     bfs: "Чтобы запустить алгоритм поиска в ширину, выберите начальную вершину, с которой будет начинаться поиск",
     dfs: "Чтобы запустить алгоритм поиска в глубину, выберите начальную вершину, с которой будет начинаться поиск",
     dijkstra: "Чтобы запустить алгоритм Дейкстры, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь",
-    bellmanFord: "Чтобы запустить алгоритм Беллмана-Форда, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь"
+    bellmanFord: "Чтобы запустить алгоритм Беллмана-Форда, выберите сначала начальную вершину, а затем конечную, до которой требуется найти кратчайший путь",
+    prim: "Нажмите \"Старт\" для запуска алгоритма Прима",
+    kruskal: "Нажмите \"Старт\" для запуска алгоритма Крускала",
+    tarjan: "Нажмите \"Старт\" для запуска алгоритма Тарьяна",
   }
 
   const toggleGrid = () => {
@@ -201,6 +211,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         createLabels();
         break;
       }
+      case "prim": {
+        removeLabels();
+        break;
+      }
+      case "kruskal": {
+        removeLabels();
+        break;
+      }
+      case "tarjan": {
+        removeLabels();
+        break;
+      }
     }
     if (selectedAlgorithm.current !== algorithmSlug) {
       if (selectedAlgorithm.current !== "") {
@@ -208,6 +230,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       selectedAlgorithm.current = algorithmSlug;
       setTooltipContent(algorithmTooltips[algorithmSlug]);
+      if (selectedAlgorithm.current === "prim" || selectedAlgorithm.current === "kruskal" || selectedAlgorithm.current === "tarjan") {
+        setIsJustStartAlgorithm(true);
+      } else {
+        setIsJustStartAlgorithm(false);
+      }
     }
   };
 
@@ -292,6 +319,160 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
 
   const toggleLoopedMode = () => {
     loopedMode.current = !loopedMode.current;
+  }
+
+  const isGraphConnected = (cy: Core) => {
+    if (cy.elements().nodes().length === 0) {
+      return true;
+    }
+  
+    let visited = new Set<cytoscape.NodeSingular>();
+    let queue: cytoscape.NodeSingular[] = [];
+    let nodes = cy.nodes();
+  
+    queue.push(nodes[0]);
+  
+    while (queue.length > 0) {
+      let node = queue.shift()!;
+      visited.add(node);
+  
+      node.neighborhood().nodes().forEach((node) => {
+        if (!visited.has(node)) {
+          visited.add(node);
+          queue.push(node);
+        }
+      });
+    }
+
+    return visited.size === nodes.length;
+  }
+
+  const areAllEdgesOriented = (cy: Core) => {
+    return cy.edges().every(edge => (edge as EdgeSingular).hasClass('oriented'));
+  }
+
+  const startAlgorithm = () => {
+    if (algorithmMode) {
+      if (!isAnimationReady) {
+        switch (selectedAlgorithm.current) {
+          case "prim": {
+            const isConnected = isGraphConnected(cyRef.current!);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому выполнить алгоритм Прима невозможно"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              const startNode = cyRef.current!.nodes().min((node) => {
+                return node.id();
+              });
+              const startNodeId = startNode.ele.id();
+              axios
+                .post("/api/prim", { graph: graph, startNodeId: startNodeId })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  console.error("Ошибка запроса:", error);
+                });
+            }
+            break;
+          }
+          case "kruskal": {
+            const isConnected = isGraphConnected(cyRef.current!);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому выполнить алгоритм Крускала невозможно"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              axios
+                .post("/api/kruskal", { graph: graph })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  console.log(frames);
+                  console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  console.error("Ошибка запроса:", error);
+                });
+            }
+            break;
+          }
+          case "tarjan": {
+            const isGraphFullyOriented = areAllEdgesOriented(cyRef.current!);
+            if (!isGraphFullyOriented) {
+              setTooltipContent(
+                "Граф содержит неориентированные рёбра, поэтому корректное выполнение алгоритма Тарьяна невозможно"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              axios
+                .post("/api/tarjan", { graph: graph })
+                .then((response) => {
+                  const {
+                    //frames,
+                    //shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  //console.log(frames);
+                  console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(resultText);
+                    setResultText(resultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  console.error("Ошибка запроса:", error);
+                });
+            }
+            break;
+          }
+        }
+      }
+    }
   }
 
   const startAnimation = (frames: any) => {
@@ -552,14 +733,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
     }
 
-    /*if (currentState.pathUpdateInfo) {
-      const labelId = `label-for-${currentState.nextNode}`
-      const label = nodeLabels.current[labelId];
-      if (label) {
-        label.innerHTML = currentState.pathUpdateInfo;
-      }
-    }*/
-
     if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
       pauseAnimation();
       isAnimationEnded.current = true;
@@ -573,6 +746,140 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
           animateBellmanFord(index + 1);
         } else {
           animateBellmanFord(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
+  const animatePrim = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedNodes = currentState.mstNodes.filter(
+        (x: string) => !prevState.mstNodes.includes(x)
+      );
+      const removedNodes = prevState.mstNodes.filter(
+        (x: string) => !currentState.mstNodes.includes(x)
+      );
+      const addedEdges = currentState.mstEdges.filter(
+        (x: string) => !prevState.mstEdges.includes(x)
+      );
+      const removedEdges = prevState.mstEdges.filter(
+        (x: string) => !currentState.mstEdges.includes(x)
+      );
+
+      return {
+        addedNodes: index === 0 ? currentState.mstNodes : addedNodes,
+        removedNodes,
+        addedEdges,
+        removedEdges,
+      };
+    };
+
+    const { addedNodes, removedNodes, addedEdges, removedEdges } = switchDirection === "back" ? findDifferences(nextState, currentState, index) : findDifferences(prevState, currentState, index);
+    
+    addedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animatePrim(index + 1);
+        } else {
+          animatePrim(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
+  const animateKruskal = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (currentState.currentEdge) {
+      cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+    } else if (switchDirection === "forward" && prevState.currentEdge) {
+      cyRef.current!.getElementById(prevState.currentEdge).removeClass("processing");
+    } else if (switchDirection === "back" && nextState.currentEdge) {
+      cyRef.current!.getElementById(nextState.currentEdge).removeClass("processing");
+    }
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedNodes = currentState.mstNodes.filter(
+        (x: string) => !prevState.mstNodes.includes(x)
+      );
+      const removedNodes = prevState.mstNodes.filter(
+        (x: string) => !currentState.mstNodes.includes(x)
+      );
+      const addedEdges = currentState.mstEdges.filter(
+        (x: string) => !prevState.mstEdges.includes(x)
+      );
+      const removedEdges = prevState.mstEdges.filter(
+        (x: string) => !currentState.mstEdges.includes(x)
+      );
+
+      return {
+        addedNodes: index === 0 ? currentState.mstNodes : addedNodes,
+        removedNodes,
+        addedEdges,
+        removedEdges,
+      };
+    };
+
+    const { addedNodes, removedNodes, addedEdges, removedEdges } = switchDirection === "back" ? findDifferences(nextState, currentState, index) : findDifferences(prevState, currentState, index);
+    
+    addedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateKruskal(index + 1);
+        } else {
+          animateKruskal(0);
         }
       }, 900 / animationSpeed.current);
     }
@@ -600,6 +907,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "bellmanFord": {
         animateBellmanFord(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "prim": {
+        animatePrim(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "kruskal": {
+        animateKruskal(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -632,6 +947,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "bellmanFord": {
         stopBellmanFord(needDisable);
+        break;
+      }
+      case "prim": {
+        stopPrim(needDisable);
+        break;
+      }
+      case "kruskal": {
+        stopKruskal(needDisable);
         break;
       }
     }
@@ -674,6 +997,22 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopPrim = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["prim"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
+  const stopKruskal = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["kruskal"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -709,6 +1048,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateBellmanFord(animationFrame.current, true);
         break;
       }
+      case "prim": {
+        animatePrim(animationFrame.current, true);
+        break;
+      }
+      case "kruskal": {
+        animateKruskal(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -718,7 +1065,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       setManualSwitch(true);
     }
     animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
-    if (animationFrame.current - 1 <= 0) {
+    if (animationFrame.current + 1 >= animationFrames.current.length) {
       setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText ? "  \n" + resultText : ""}`)
     } else {
       setTooltipContent(stepByStepExplanation[animationFrame.current]);
@@ -738,6 +1085,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "bellmanFord": {
         animateBellmanFord(animationFrame.current, true, "back");
+        break;
+      }
+      case "prim": {
+        animatePrim(animationFrame.current, true, "back");
+        break;
+      }
+      case "kruskal": {
+        animateKruskal(animationFrame.current, true, "back");
         break;
       }
     }
@@ -1084,6 +1439,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     isPlaying,
     animationSpeed,
     loopedMode,
+    isJustStartAlgorithm,
+    isLoading,
+    setIsLoading,
+    startAlgorithm,
     toggleLoopedMode,
     increaseMultiplier,
     decreaseMultiplier,

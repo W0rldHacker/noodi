@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import React, { useRef } from "react";
 import { useGraphEditor } from "@/contexts/GraphEditorContext";
 import Markdown from "./Markdown";
-import { FaAngleLeft } from "react-icons/fa6";
+import { FaAngleLeft, FaPlay } from "react-icons/fa6";
 import TypeIt from "typeit-react";
 import AlgorithmDetails from "./AlgorithmDetails";
 
@@ -18,6 +18,8 @@ const Tooltip: React.FC<TooltipProps> = ({ content, isLoading }) => {
     disableAlgorithmMode,
     isAnimationReady,
     algorithmDetails,
+    isJustStartAlgorithm,
+    startAlgorithm,
   } = useGraphEditor();
 
   const openAlgorithmDetails = () => {
@@ -67,6 +69,15 @@ const Tooltip: React.FC<TooltipProps> = ({ content, isLoading }) => {
                       className="flex flex-col gap-1"
                     />
                   </TypeIt>
+                  {isJustStartAlgorithm && (
+                    <button
+                    className="btn btn-ghost no-animation mt-1 btn-xs font-bold justify-center items-center gap-1 min-w-max text-base-content text-opacity-75 hover:bg-transparent hover:text-opacity-100"
+                    onClick={startAlgorithm}
+                  >
+                    <FaPlay size={12}></FaPlay>
+                    Старт
+                  </button>
+                  )}
                   {isAnimationReady && (
                     <button
                       className="btn btn-ghost no-animation mt-1 btn-xs font-bold justify-center items-center gap-1 min-w-max text-base-content text-opacity-75 hover:bg-transparent hover:text-opacity-100"

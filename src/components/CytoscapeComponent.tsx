@@ -14,7 +14,7 @@ import { createPopper } from '@popperjs/core';
 cytoscape.use( popper );
 
 const CytoscapeComponent: React.FC = () => {
-  const { cyRef, getThemeStyles, saveGraph, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, sourceNode, setSourceNode, algorithmMode, selectedAlgorithm, isAnimationReady, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
+  const { cyRef, getThemeStyles, saveGraph, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, sourceNode, setSourceNode, algorithmMode, selectedAlgorithm, isAnimationReady, isLoading, setIsLoading, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
   const { openEdgeConfigurator } = useEdgeConfigurator();
   const [isCyReady, setIsCyReady] = useState(false);
   //const [sourceNode, setSourceNode] = useState("");
@@ -24,7 +24,7 @@ const CytoscapeComponent: React.FC = () => {
   const [selectedEdge, setSelectedEdge] = useState<EdgeSingular | null>(null);
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [graphState, setGraphState] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  //const [isLoading, setIsLoading] = useState(false);
   const nodeCounter = useRef<number>(1);
   
 
@@ -335,12 +335,18 @@ const CytoscapeComponent: React.FC = () => {
                 if (existsNegativeEdgeWeight) {
                   unselectNodes();
                   setSourceNode("");
-                  setTooltipContent("Граф содержит рёбра с отрицательными весами, поэтому выполнить алгоритм Дейкстры невозможно");
+                  setTooltipContent(
+                    "Граф содержит рёбра с отрицательными весами, поэтому выполнить алгоритм Дейкстры невозможно"
+                  );
                 } else {
                   const graph = cyRef.current!.json();
                   setIsLoading(true);
                   axios
-                    .post("/api/dijkstra", { graph: graph, startNodeId: sourceNode, endNodeId: nodeId })
+                    .post("/api/dijkstra", {
+                      graph: graph,
+                      startNodeId: sourceNode,
+                      endNodeId: nodeId,
+                    })
                     .then((response) => {
                       const {
                         frames,
@@ -348,8 +354,6 @@ const CytoscapeComponent: React.FC = () => {
                         resultText,
                         stepByStepExplanation,
                       } = response.data;
-                      console.log(frames);
-                      //console.log(stepByStepExplanation);
                       setTimeout(() => {
                         unselectNodes();
                         setSourceNode("");
@@ -378,7 +382,11 @@ const CytoscapeComponent: React.FC = () => {
                 const graph = cyRef.current!.json();
                 setIsLoading(true);
                 axios
-                  .post("/api/bellmanFord", { graph: graph, startNodeId: sourceNode, endNodeId: nodeId })
+                  .post("/api/bellmanFord", {
+                    graph: graph,
+                    startNodeId: sourceNode,
+                    endNodeId: nodeId,
+                  })
                   .then((response) => {
                     const {
                       frames,
@@ -387,8 +395,6 @@ const CytoscapeComponent: React.FC = () => {
                       stepByStepExplanation,
                       hasNegativeCycle,
                     } = response.data;
-                    console.log(frames);
-                    //console.log(stepByStepExplanation);
                     setTimeout(() => {
                       unselectNodes();
                       setSourceNode("");
@@ -483,7 +489,7 @@ const CytoscapeComponent: React.FC = () => {
       cyRef.current?.removeListener('grab', 'node', handleNodeGrab);
       cyRef.current?.removeListener('free', 'node', handleNodeFree);
     }
-  }, [cyRef, saveGraph, saveState, getMaxNodeId, unselectNodes, addNodeMode, addEdgeMode, deleteMode, sourceNode, openEdgeConfigurator, initialPosition, graphState, algorithmMode, selectedAlgorithm, setTooltipContent, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText, isAnimationReady, setSourceNode])
+  }, [cyRef, saveGraph, saveState, getMaxNodeId, unselectNodes, addNodeMode, addEdgeMode, deleteMode, sourceNode, openEdgeConfigurator, initialPosition, graphState, algorithmMode, selectedAlgorithm, setTooltipContent, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText, isAnimationReady, setSourceNode, setIsLoading])
 
   useEffect(() => {
     if (!addEdgeMode) {

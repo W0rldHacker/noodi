@@ -161,15 +161,33 @@ export default function Home() {
             <details open>
               <summary>Задачи минимального остовного дерева и сетевого потока</summary>
               <ul className="flex flex-col gap-y-0.5 mt-0.5">
-                <li><a>Алгоритм Прима</a></li>
-                <li><a>Алгоритм Крускала</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "prim" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("prim")}>
+                      Алгоритм Прима
+                    </button>
+                  </a>
+                </li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "kruskal" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("kruskal")}>
+                      Алгоритм Крускала
+                    </button>
+                  </a>
+                </li>
                 <li><a>Алгоритм Эдмондса-Карпа</a></li>
               </ul>
             </details>
             <details open>
               <summary>Специализированные алгоритмы</summary>
               <ul className="flex flex-col gap-y-0.5 mt-0.5">
-                <li><a>Алгоритм Тарьяна</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "tarjan" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("tarjan")}>
+                      Алгоритм Тарьяна
+                    </button>
+                  </a>
+                </li>
                 <li><a>Цветовая раскраска</a></li>
                 <li><a>Нахождение радиуса и диаметра</a></li>
                 <li><a>Вычисление степеней вершин</a></li>
