@@ -220,7 +220,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         break;
       }
       case "tarjan": {
-        removeLabels();
+        createLabels();
         break;
       }
     }
@@ -414,8 +414,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  console.log(frames);
-                  console.log(stepByStepExplanation);
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -446,18 +446,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                 .post("/api/tarjan", { graph: graph })
                 .then((response) => {
                   const {
-                    //frames,
-                    //shortResultText,
+                    frames,
+                    shortResultText,
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  //console.log(frames);
+                  console.log(frames);
                   console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
-                    setTooltipContent(resultText);
-                    setResultText(resultText);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
                     setAlgorithmDetails(resultText);
                     setStepByStepExplanation(stepByStepExplanation);
                     startAnimation(frames);
@@ -885,6 +885,107 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateTarjan = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedNodes = currentState.visitedNodes.filter(
+        (x: string) => !prevState.visitedNodes.includes(x)
+      );
+      const removedNodes = prevState.visitedNodes.filter(
+        (x: string) => !currentState.visitedNodes.includes(x)
+      );
+      const addedEdges = currentState.visitedEdges.filter(
+        (x: string) => !prevState.visitedEdges.includes(x)
+      );
+      const removedEdges = prevState.visitedEdges.filter(
+        (x: string) => !currentState.visitedEdges.includes(x)
+      );
+      const addedSCCNodes = currentState.sccsNodes.filter(
+        (x: string) => !prevState.sccsNodes.includes(x)
+      );
+      const removedSCCNodes = prevState.sccsNodes.filter(
+        (x: string) => !currentState.sccsNodes.includes(x)
+      );
+      const addedSCCEdges = currentState.sccsEdges.filter(
+        (x: string) => !prevState.sccsEdges.includes(x)
+      );
+      const removedSCCEdges = prevState.sccsEdges.filter(
+        (x: string) => !currentState.sccsEdges.includes(x)
+      );
+
+      return {
+        addedNodes: index === 0 ? currentState.visitedNodes : addedNodes,
+        removedNodes,
+        addedEdges,
+        removedEdges,
+        addedSCCNodes,
+        removedSCCNodes,
+        addedSCCEdges,
+        removedSCCEdges,
+      };
+    };
+
+    const { addedNodes, removedNodes, addedEdges, removedEdges, addedSCCNodes, removedSCCNodes, addedSCCEdges, removedSCCEdges } = switchDirection === "back" ? findDifferences(nextState, currentState, index) : findDifferences(prevState, currentState, index);
+    
+    addedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("processing");
+    })
+    removedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("processing");
+    })
+    addedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("processing");
+    })
+    removedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("processing");
+    })
+    addedSCCNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedSCCNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedSCCEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedSCCEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    for (const key in currentState.nodesLabels) {
+      if (currentState.nodesLabels.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          label.innerHTML = currentState.nodesLabels[key];
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateTarjan(index + 1);
+        } else {
+          animateTarjan(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -915,6 +1016,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "kruskal": {
         animateKruskal(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "tarjan": {
+        animateTarjan(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -955,6 +1060,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "kruskal": {
         stopKruskal(needDisable);
+        break;
+      }
+      case "tarjan": {
+        stopTarjan(needDisable);
         break;
       }
     }
@@ -1013,6 +1122,15 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopTarjan = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.elements().removeClass("visited");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["tarjan"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -1056,6 +1174,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateKruskal(animationFrame.current, true);
         break;
       }
+      case "tarjan": {
+        animateTarjan(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -1093,6 +1215,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "kruskal": {
         animateKruskal(animationFrame.current, true, "back");
+        break;
+      }
+      case "tarjan": {
+        animateTarjan(animationFrame.current, true, "back");
         break;
       }
     }

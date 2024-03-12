@@ -107,7 +107,6 @@ ${allMstEdges}
 **Общий вес минимального остовного дерева:** ${totalWeight}
 
 **Пошаговое описание алгоритма:**
-
 ${stepByStepExplanation
   .map((step, index) => {
     return `${index + 1}. ${step}`;
