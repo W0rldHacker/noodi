@@ -70,6 +70,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
       }
     } else {
       edgeWeight.current = 1;
+      displayedEdgeWeight.current = "";
     }
 
     //console.log(defaultConfig.reverseEdge?.hasClass("oriented"));

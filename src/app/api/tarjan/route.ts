@@ -208,7 +208,7 @@ ${stepByStepExplanation
 - **Всего рёбер в графе:** ${totalEdges}
 - **Количество шагов алгоритма:** ${steps}
 
-**Узнать больше об алгоритме Крускала можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Алгоритм_Тарьяна).**`;
+**Узнать больше об алгоритме Тарьяна можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Алгоритм_Тарьяна).**`;
 
     return { frames, shortResultText, resultText, stepByStepExplanation };
   }

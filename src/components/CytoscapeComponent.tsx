@@ -415,6 +415,46 @@ const CytoscapeComponent: React.FC = () => {
               }
               break;
             }
+            case "edmondsKarp": {
+              const nodeId = event.target.id();
+              if (!sourceNode) {
+                setSourceNode(nodeId);
+                event.target.addClass("selected");
+              } else {
+                const graph = cyRef.current!.json();
+                setIsLoading(true);
+                axios
+                  .post("/api/edmondsKarp", {
+                    graph: graph,
+                    sourceId: sourceNode,
+                    sinkId: nodeId,
+                  })
+                  .then((response) => {
+                    const {
+                      //frames,
+                      //shortResultText,
+                      resultText,
+                      stepByStepExplanation,
+                    } = response.data;
+                    console.log(stepByStepExplanation);
+                    setTimeout(() => {
+                      unselectNodes();
+                      setSourceNode("");
+                      setIsLoading(false);
+                      setTooltipContent(resultText);
+                      setResultText(resultText);
+                      setAlgorithmDetails(resultText);
+                      setStepByStepExplanation(stepByStepExplanation);
+                      startAnimation(frames);
+                    }, 1000);
+                  })
+                  .catch((error) => {
+                    setIsLoading(false);
+                    console.error("Ошибка запроса:", error);
+                  });
+              }
+              break;
+            }
           }
         }
       }

@@ -150,7 +150,13 @@ export default function Home() {
                   </a>
                 </li>
                 <li><a>Алгоритм Флойда</a></li>
-                <li><a>Топологическая сортировка</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "topologicalSort" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("topologicalSort")}>
+                      Топологическая сортировка
+                    </button>
+                  </a>
+                </li>
                 <li><a>Нахождение компонент связности</a></li>
                 <li><a>Поиск Гамильтонова пути</a></li>
                 <li><a>Поиск Гамильтонова цикла</a></li>
@@ -175,7 +181,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Алгоритм Эдмондса-Карпа</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "edmondsKarp" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("edmondsKarp")}>
+                      Алгоритм Эдмондса-Карпа
+                    </button>
+                  </a>
+                </li>
               </ul>
             </details>
             <details open>
@@ -188,7 +200,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Цветовая раскраска</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "graphColoring" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("graphColoring")}>
+                      Цветовая раскраска
+                    </button>
+                  </a>
+                </li>
                 <li><a>Нахождение радиуса и диаметра</a></li>
                 <li><a>Вычисление степеней вершин</a></li>
               </ul>

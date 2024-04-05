@@ -150,6 +150,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     prim: "Нажмите \"Старт\" для запуска алгоритма Прима",
     kruskal: "Нажмите \"Старт\" для запуска алгоритма Крускала",
     tarjan: "Нажмите \"Старт\" для запуска алгоритма Тарьяна",
+    topologicalSort: "Нажмите \"Старт\" для запуска алгоритма топологической сортировки",
+    graphColoring: "Нажмите \"Старт\" для запуска алгоритма цветовой раскраски вершин графа",
+    edmondsKarp: "Чтобы запустить алгоритм Эдмондса-Карпа, выберите сначала вершину-исток, а затем вершину-сток, до которой требуется найти максимальный поток"
   }
 
   const toggleGrid = () => {
@@ -223,6 +226,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         createLabels();
         break;
       }
+      case "topologicalSort": {
+        createLabels();
+        break;
+      }
+      case "graphColoring": {
+        removeLabels();
+        break;
+      }
     }
     if (selectedAlgorithm.current !== algorithmSlug) {
       if (selectedAlgorithm.current !== "") {
@@ -230,7 +241,13 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       selectedAlgorithm.current = algorithmSlug;
       setTooltipContent(algorithmTooltips[algorithmSlug]);
-      if (selectedAlgorithm.current === "prim" || selectedAlgorithm.current === "kruskal" || selectedAlgorithm.current === "tarjan") {
+      if (
+        selectedAlgorithm.current === "prim" ||
+        selectedAlgorithm.current === "kruskal" ||
+        selectedAlgorithm.current === "tarjan" ||
+        selectedAlgorithm.current === "topologicalSort" ||
+        selectedAlgorithm.current === "graphColoring"
+      ) {
         setIsJustStartAlgorithm(true);
       } else {
         setIsJustStartAlgorithm(false);
@@ -241,6 +258,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const disableAlgorithmMode = () => {
     setAlgorithmMode(false);
     setTooltipContent("");
+    setIsJustStartAlgorithm(false);
     stopAnimation(true);
     removeLabels();
     selectedAlgorithm.current = "";
@@ -451,8 +469,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  console.log(frames);
-                  console.log(stepByStepExplanation);
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -468,6 +486,76 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                   console.error("Ошибка запроса:", error);
                 });
             }
+            break;
+          }
+          case "topologicalSort": {
+            const isGraphFullyOriented = areAllEdgesOriented(cyRef.current!);
+            if (!isGraphFullyOriented) {
+              setTooltipContent(
+                "Граф содержит неориентированные рёбра, поэтому корректное выполнение алгоритма топологической сортировки невозможно"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              axios
+                .post("/api/topologicalSort", { graph: graph })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                    isCyclic,
+                  } = response.data;
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    if (!isCyclic) {
+                      setResultText(shortResultText);
+                      setAlgorithmDetails(resultText);
+                      setStepByStepExplanation(stepByStepExplanation);
+                      startAnimation(frames);
+                    }
+                  }, 1000);
+                })
+                .catch((error) => {
+                  setIsLoading(false);
+                  console.error("Ошибка запроса:", error);
+                });
+            }
+            break;
+          }
+          case "graphColoring": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/graphColoring", { graph: graph })
+              .then((response) => {
+                const {
+                  frames,
+                  shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                //console.log(frames);
+                //console.log(resultText);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
             break;
           }
         }
@@ -986,6 +1074,146 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateTopologicalSort = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedVisitedNodes = currentState.visitedNodes.filter(
+        (x: string) => !prevState.visitedNodes.includes(x)
+      );
+      const removedVisitedNodes = prevState.visitedNodes.filter(
+        (x: string) => !currentState.visitedNodes.includes(x)
+      );
+      const addedEdges = currentState.visitedEdges.filter(
+        (x: string) => !prevState.visitedEdges.includes(x)
+      );
+      const removedEdges = prevState.visitedEdges.filter(
+        (x: string) => !currentState.visitedEdges.includes(x)
+      );
+      const addedVisitingNodes = currentState.visitingNodes.filter(
+        (x: string) => !prevState.visitingNodes.includes(x)
+      );
+      const removedVisitingNodes = prevState.visitingNodes.filter(
+        (x: string) => !currentState.visitingNodes.includes(x)
+      );
+
+      return {
+        addedVisitedNodes,
+        removedVisitedNodes,
+        addedEdges,
+        removedEdges,
+        addedVisitingNodes,
+        removedVisitingNodes,
+      };
+    };
+
+    const { addedVisitedNodes, removedVisitedNodes, addedEdges, removedEdges, addedVisitingNodes, removedVisitingNodes } = switchDirection === "back" ? findDifferences(nextState, currentState, index) : findDifferences(prevState, currentState, index);
+    
+    addedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("processed");
+    })
+    removedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("processed");
+    })
+    addedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+    addedVisitingNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedVisitingNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+
+    for (const key in currentState.nodesLabels) {
+      if (currentState.nodesLabels.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          label.innerHTML = currentState.nodesLabels[key];
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateTopologicalSort(index + 1);
+        } else {
+          animateTopologicalSort(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
+  const animateGraphColoring = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+    
+    if (switchDirection === "back") {
+      if (nextState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(nextState.currentNode).removeClass("processed");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processed");
+      }
+    } else {
+      if (prevState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(prevState.currentNode).removeClass("processed");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processed");
+      }
+    }
+
+    for (const key in currentState.nodesColors) {
+      if (currentState.nodesColors.hasOwnProperty(key)) {
+        if (currentState.nodesColors[key] === 0) {
+          cyRef.current!.getElementById(key).removeClass("color-1");
+          cyRef.current!.getElementById(key).removeClass("color-2");
+          cyRef.current!.getElementById(key).removeClass("color-3");
+          cyRef.current!.getElementById(key).removeClass("color-4");
+          cyRef.current!.getElementById(key).removeClass("color-5");
+        }
+        else {
+          cyRef.current!.getElementById(key).addClass(`color-${currentState.nodesColors[key]}`);
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateGraphColoring(index + 1);
+        } else {
+          animateGraphColoring(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -1020,6 +1248,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "tarjan": {
         animateTarjan(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "graphColoring": {
+        animateGraphColoring(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -1064,6 +1300,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "tarjan": {
         stopTarjan(needDisable);
+        break;
+      }
+      case "topologicalSort": {
+        stopTopologicalSort(needDisable);
+        break;
+      }
+      case "graphColoring": {
+        stopGraphColoring(needDisable);
         break;
       }
     }
@@ -1125,8 +1369,31 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const stopTarjan = (needDisable: boolean) => {
     cyRef.current!.elements().removeClass("processing");
     cyRef.current!.elements().removeClass("visited");
+    clearLabels();
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["tarjan"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
+  const stopTopologicalSort = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("processed");
+    cyRef.current!.elements().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["topologicalSort"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
+  const stopGraphColoring = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("color-1");
+    cyRef.current!.nodes().removeClass("color-2");
+    cyRef.current!.nodes().removeClass("color-3");
+    cyRef.current!.nodes().removeClass("color-4");
+    cyRef.current!.nodes().removeClass("color-5");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["graphColoring"]);
       setIsJustStartAlgorithm(true);
     }
   }
@@ -1178,6 +1445,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateTarjan(animationFrame.current, true);
         break;
       }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true);
+        break;
+      }
+      case "graphColoring": {
+        animateGraphColoring(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -1219,6 +1494,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "tarjan": {
         animateTarjan(animationFrame.current, true, "back");
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true, "back");
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true, "back");
+        break;
+      }
+      case "graphColoring": {
+        animateGraphColoring(animationFrame.current, true, "back");
         break;
       }
     }
@@ -1409,6 +1696,46 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             color: "#4c4f69",
           }
         },
+        {
+          selector: "node.color-1",
+          style: {
+            "background-color": "#e64553",
+            "border-color": "#d20f39",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#d20f39",
+          }
+        },
+        {
+          selector: "node.color-2",
+          style: {
+            "background-color": "#fe640b",
+            "border-color": "#fe640b",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#fe640b",
+          }
+        },
+        {
+          selector: "node.color-3",
+          style: {
+            "background-color": "#8839ef",
+            "border-color": "#8839ef",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#8839ef",
+          }
+        },
+        {
+          selector: "node.color-4",
+          style: {
+            "background-color": "#df8e1d",
+            "border-color": "#df8e1d",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#df8e1d",
+          }
+        },
+        {
+          selector: "node.color-5",
+          style: {
+            "background-color": "#7287fd",
+            "border-color": "#7287fd",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#7287fd",
+          }
+        },
       ];
     } else {
       return [
@@ -1524,6 +1851,46 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             "background-color": "#51576d",
             "border-color": "#51576d",
             color: "#c6d0f5",
+          }
+        },
+        {
+          selector: "node.color-1",
+          style: {
+            "background-color": "#ea999c",
+            "border-color": "#e78284",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#e78284",
+          }
+        },
+        {
+          selector: "node.color-2",
+          style: {
+            "background-color": "#ef9f76",
+            "border-color": "#ef9f76",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#ef9f76",
+          }
+        },
+        {
+          selector: "node.color-3",
+          style: {
+            "background-color": "#ca9ee6",
+            "border-color": "#ca9ee6",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#ca9ee6",
+          }
+        },
+        {
+          selector: "node.color-4",
+          style: {
+            "background-color": "#e5c890",
+            "border-color": "#e5c890",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#e5c890",
+          }
+        },
+        {
+          selector: "node.color-5",
+          style: {
+            "background-color": "#babbf1",
+            "border-color": "#babbf1",
+            color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#babbf1",
           }
         },
       ];
