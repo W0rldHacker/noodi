@@ -234,7 +234,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         removeLabels();
         break;
       }
+      case "edmondsKarp": {
+        removeLabels();
+        break;
+      }
     }
+
     if (selectedAlgorithm.current !== algorithmSlug) {
       if (selectedAlgorithm.current !== "") {
         stopAnimation(false);
@@ -252,6 +257,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       } else {
         setIsJustStartAlgorithm(false);
       }
+      if (algorithmSlug === "edmondsKarp") {
+        addEdgeFlowData();
+      } else {
+        removeEdgeFlowData();
+      }
     }
   };
 
@@ -263,6 +273,20 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     removeLabels();
     selectedAlgorithm.current = "";
   };
+
+  const addEdgeFlowData = () => {
+    cyRef.current!.edges().forEach(edge => {
+      edge.data('flow', 0);
+      edge.addClass('flow-display')
+    });
+  }
+
+  const removeEdgeFlowData = () => {
+    cyRef.current!.edges().forEach(edge => {
+      edge.removeData('flow');
+      edge.removeClass('flow-display')
+    });
+  }
 
   const createLabels = () => {
     cyRef.current!.nodes().forEach(node => {
@@ -1168,7 +1192,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
     const currentState = animationFrames.current[index];
     const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
-    
+      
     if (switchDirection === "back") {
       if (nextState.currentNode !== currentState.currentNode) {
         cyRef.current!.getElementById(nextState.currentNode).removeClass("processed");
@@ -1209,6 +1233,115 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
           animateGraphColoring(index + 1);
         } else {
           animateGraphColoring(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
+  const animateEdmondsKarp = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+    
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedVisitedNodes = currentState.visitedNodes.filter(
+        (x: string) => !prevState.visitedNodes.includes(x)
+      );
+      const removedVisitedNodes = prevState.visitedNodes.filter(
+        (x: string) => !currentState.visitedNodes.includes(x)
+      );
+      const addedVisitedEdges = currentState.visitedEdges.filter(
+        (x: string) => !prevState.visitedEdges.includes(x)
+      );
+      const removedVisitedEdges = prevState.visitedEdges.filter(
+        (x: string) => !currentState.visitedEdges.includes(x)
+      );
+      const addedCurrentPathNodes = currentState.currentPathNodes.filter(
+        (x: string) => !prevState.currentPathNodes.includes(x)
+      );
+      const removedCurrrentPathNodes = prevState.currentPathNodes.filter(
+        (x: string) => !currentState.currentPathNodes.includes(x)
+      );
+      const addedCurrentPathEdges = currentState.currentPathEdges.filter(
+        (x: string) => !prevState.currentPathEdges.includes(x)
+      );
+      const removedCurrrentPathEdges = prevState.currentPathEdges.filter(
+        (x: string) => !currentState.currentPathEdges.includes(x)
+      );
+
+      return {
+        addedVisitedNodes,
+        removedVisitedNodes,
+        addedVisitedEdges,
+        removedVisitedEdges,
+        addedCurrentPathNodes,
+        removedCurrrentPathNodes,
+        addedCurrentPathEdges,
+        removedCurrrentPathEdges
+      };
+    };
+
+    const {
+      addedVisitedNodes,
+      removedVisitedNodes,
+      addedVisitedEdges,
+      removedVisitedEdges,
+      addedCurrentPathNodes,
+      removedCurrrentPathNodes,
+      addedCurrentPathEdges,
+      removedCurrrentPathEdges,
+    } =
+      switchDirection === "back"
+        ? findDifferences(nextState, currentState, index)
+        : findDifferences(prevState, currentState, index);
+    
+    addedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+    addedCurrentPathNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("processing");
+    })
+    removedCurrrentPathNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("processing");
+    })
+    addedCurrentPathEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("processing");
+    })
+    removedCurrrentPathEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("processing");
+    })
+
+    for (const key in currentState.flows) {
+      if (currentState.flows.hasOwnProperty(key)) {
+        cyRef.current!.getElementById(key).data("flow", currentState.flows[key]);
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateEdmondsKarp(index + 1);
+        } else {
+          animateEdmondsKarp(0);
         }
       }, 900 / animationSpeed.current);
     }
@@ -1256,6 +1389,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "graphColoring": {
         animateGraphColoring(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "edmondsKarp": {
+        animateEdmondsKarp(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -1308,6 +1445,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "graphColoring": {
         stopGraphColoring(needDisable);
+        break;
+      }
+      case "edmondsKarp": {
+        stopEdmondsKarp(needDisable);
         break;
       }
     }
@@ -1398,6 +1539,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopEdmondsKarp = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.edges().forEach(edge => {
+      edge.data("flow", 0);
+    })
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["graphColoring"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -1453,6 +1606,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateGraphColoring(animationFrame.current, true);
         break;
       }
+      case "edmondsKarp": {
+        animateEdmondsKarp(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -1506,6 +1663,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "graphColoring": {
         animateGraphColoring(animationFrame.current, true, "back");
+        break;
+      }
+      case "edmondsKarp": {
+        animateEdmondsKarp(animationFrame.current, true, "back");
         break;
       }
     }
@@ -1734,6 +1895,22 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             "background-color": "#7287fd",
             "border-color": "#7287fd",
             color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#7287fd",
+          }
+        },
+        {
+          selector: "edge.flow-display",
+          style: {
+            label: (edge: EdgeSingular) => {
+              const title = edge.data("title");
+              const weight = edge.data("weight");
+              const flow = edge.data("flow");
+
+              if (title) {
+                return `${title} ${`(${flow}/${weight})`}`;
+              } else {
+                return `${flow}/${weight}`;
+              }
+            },
           }
         },
       ];

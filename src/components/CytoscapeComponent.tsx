@@ -431,18 +431,19 @@ const CytoscapeComponent: React.FC = () => {
                   })
                   .then((response) => {
                     const {
-                      //frames,
-                      //shortResultText,
+                      frames,
+                      shortResultText,
                       resultText,
                       stepByStepExplanation,
                     } = response.data;
+                    console.log(frames);
                     console.log(stepByStepExplanation);
                     setTimeout(() => {
                       unselectNodes();
                       setSourceNode("");
                       setIsLoading(false);
-                      setTooltipContent(resultText);
-                      setResultText(resultText);
+                      setTooltipContent(shortResultText);
+                      setResultText(shortResultText);
                       setAlgorithmDetails(resultText);
                       setStepByStepExplanation(stepByStepExplanation);
                       startAnimation(frames);

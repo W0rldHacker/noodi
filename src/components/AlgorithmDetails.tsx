@@ -34,7 +34,7 @@ const AlgorithmDetails: React.FC<AlgorithmDetailsProps> = ({
           key={content}
           options={{
             cursor: false,
-            speed: 8,
+            speed: 5,
             lifeLike: true,
             startDelay: 0,
           }}

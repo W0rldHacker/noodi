@@ -8,19 +8,19 @@ export async function POST(req: Request) {
     elements: graph.elements,
   });
 
+  const newCy = cytoscape({
+    elements: graph.elements,
+  });
+
   function preprocessGraph(cy: Core) {
-    // Преобразование неориентированных рёбер в ориентированные
     cy.edges().forEach((edge) => {
       if (!edge.hasClass("oriented")) {
-        // Если ребро неориентированное, добавляем обратное ребро
         const source = edge.data("source");
         const target = edge.data("target");
         const capacity = edge.data("weight");
 
-        // Установка текущего ребра как ориентированного
-        edge.data("directed", true);
+        edge.addClass("oriented");
 
-        // Добавление обратного ребра с той же пропускной способностью
         cy.add({
           group: "edges",
           data: {
@@ -39,8 +39,8 @@ export async function POST(req: Request) {
     let visited = new Set();
     let queue = [];
     let sortedEdges = cy.edges().sort((a, b) => {
-      const aIds = a.id().split('-').map(Number);
-      const bIds = b.id().split('-').map(Number);
+      const aIds = a.id().split("-").map(Number);
+      const bIds = b.id().split("-").map(Number);
 
       if (aIds[0] !== bIds[0]) {
         return aIds[0] - bIds[0];
@@ -92,12 +92,11 @@ export async function POST(req: Request) {
         }
       });*/
 
-      let neighbors = sortedEdges
-        .filter(
-          (edge) =>
-            edge.data("source") === currentNodeId &&
-            !visited.has(edge.data("target"))
-        );
+      let neighbors = sortedEdges.filter(
+        (edge) =>
+          edge.data("source") === currentNodeId &&
+          !visited.has(edge.data("target"))
+      );
       for (let edge of neighbors) {
         let nextNodeId = edge.data("target");
         if (!visited.has(nextNodeId) && edge.data("weight") > 0) {
@@ -110,20 +109,56 @@ export async function POST(req: Request) {
     return null;
   }
 
-  function edmondsKarp(cy: Core, sourceId: string, sinkId: string) {
-    preprocessGraph(cy);
+  function edmondsKarp(
+    cy: Core,
+    newCy: Core,
+    sourceId: string,
+    sinkId: string
+  ) {
+    preprocessGraph(newCy);
     let flow = 0;
+    const frames: any[] = [];
+    const paths = [];
+    let currentFlows: { [key: string]: number } = {};
+    const flowPathsEdges: Set<string> = new Set();
+    let flowPathsNodes: Set<string> = new Set();
+    //let residualCapacities: { [key: string]: number } = {};
+    cy.edges().forEach((edge) => {
+      currentFlows[edge.id()] = 0;
+      //residualCapacities[edge.id()] = edge.data("weight");
+    });
     const stepByStepExplanation = [];
-    stepByStepExplanation.push(`Ищем кратчайший (по количеству рёбер) увеличивающий путь из истока (вершина ${sourceId}) до стока (вершина ${sinkId}) с помощью поиска в ширину`);
-    let path = bfs(cy, sourceId, sinkId);
+    frames.push({
+      visitedNodes: Array.from(flowPathsNodes),
+      visitedEdges: Array.from(flowPathsEdges),
+      currentPathNodes: [],
+      currentPathEdges: [],
+      flows: { ...currentFlows },
+      //residualCapacities: { ...residualCapacities },
+    });
+    const sourceNodeTitle = cy.getElementById(sourceId).data("title");
+    const sinkNodeTitle = cy.getElementById(sinkId).data("title");
+    stepByStepExplanation.push(
+      `Ищем кратчайший (по количеству рёбер) увеличивающий путь из истока (вершина \"${sourceNodeTitle}\") до стока (вершина \"${sinkNodeTitle}\") с помощью поиска в ширину`
+    );
+    let path = bfs(newCy, sourceId, sinkId);
 
     while (path) {
-      stepByStepExplanation.push(`Найден увеличивающий путь: ${path.join(" -> ")}.`);
+      stepByStepExplanation.push(
+        `Найден увеличивающий путь: ${path
+          .map((node) => {
+            return `\"${newCy.getElementById(node).data("title")}\"`;
+          })
+          .join(" 🠖 ")}`
+      );
+      let pathEdges: string[] = [];
+      let pathNodes: Set<string> = new Set();
 
-      // Находим минимальную пропускную способность в увеличивающем пути
       let minCapacity = Infinity;
       for (let i = 0; i < path.length - 1; i++) {
-        let edge = cy
+        pathNodes.add(path[i]);
+        //let edge = cy.edges().filter(`[id="${path[i]}-${path[i+1]}"]`).first();
+        let edge = newCy
           .edges()
           .filter(
             (edge) =>
@@ -131,11 +166,29 @@ export async function POST(req: Request) {
               edge.data("target") === path![i + 1]
           )[0];
         minCapacity = Math.min(minCapacity, edge.data("weight"));
+        if (cy.edges().contains(edge)) {
+          pathEdges.push(edge.id());
+        } else {
+          const reverseEdge = cy.getElementById(`${path![i + 1]}-${path![i]}`);
+          pathEdges.push(reverseEdge.id());
+        }
       }
+      pathNodes.add(sinkId);
 
-      // Обновляем пропускные способности и обратные рёбра
+      stepByStepExplanation[
+        stepByStepExplanation.length - 1
+      ] += `. Минимальная пропускная способность на пути: ${minCapacity}`;
+      frames.push({
+        visitedNodes: Array.from(flowPathsNodes),
+        visitedEdges: Array.from(flowPathsEdges),
+        currentPathNodes: Array.from(pathNodes),
+        currentPathEdges: pathEdges,
+        flows: { ...currentFlows },
+        //residualCapacities: { ...residualCapacities },
+      });
+
       for (let i = 0; i < path.length - 1; i++) {
-        let forwardEdge = cy
+        let forwardEdge = newCy
           .edges()
           .filter(
             (edge) =>
@@ -143,8 +196,40 @@ export async function POST(req: Request) {
               edge.data("target") === path![i + 1]
           )[0];
         forwardEdge.data("weight", forwardEdge.data("weight") - minCapacity);
-        // Добавляем или обновляем обратное ребро
-        let reverseEdge = cy
+
+        const sourceTitle = cy.getElementById(path![i]).data("title");
+        const targetTitle = cy.getElementById(path![i + 1]).data("title");
+        const oldFlow = currentFlows[forwardEdge.id()];
+
+        if (cy.edges().contains(forwardEdge)) {
+          currentFlows[forwardEdge.id()] += minCapacity;
+          //residualCapacities[forwardEdge.id()] -= minCapacity;
+          stepByStepExplanation.push(
+            `Обновляем поток между вершинами \"${sourceTitle}\" и \"${targetTitle}\". Новое значение потока: ${oldFlow} + ${minCapacity} = ${
+              currentFlows[forwardEdge.id()]
+            }`
+          );
+        } else {
+          const reverseEdge = cy.getElementById(`${path![i + 1]}-${path![i]}`);
+          currentFlows[reverseEdge.id()] += minCapacity;
+          //residualCapacities[reverseEdge.id()] -= minCapacity;
+          stepByStepExplanation.push(
+            `Обновляем поток между вершинами \"${targetTitle}\" и \"${sourceTitle}\". Новое значение потока: ${oldFlow} + ${minCapacity} = ${
+              currentFlows[forwardEdge.id()]
+            }`
+          );
+        }
+
+        frames.push({
+          visitedNodes: Array.from(flowPathsNodes),
+          visitedEdges: Array.from(flowPathsEdges),
+          currentPathNodes: Array.from(pathNodes),
+          currentPathEdges: pathEdges,
+          flows: { ...currentFlows },
+          //residualCapacities: { ...residualCapacities },
+        });
+
+        let reverseEdge = newCy
           .edges()
           .filter(
             (edge) =>
@@ -154,7 +239,7 @@ export async function POST(req: Request) {
         if (reverseEdge) {
           reverseEdge.data("weight", reverseEdge.data("weight") + minCapacity);
         } else {
-          cy.add({
+          newCy.add({
             group: "edges",
             data: {
               id: `reverse-${path[i + 1]}-${path[i]}`,
@@ -167,31 +252,115 @@ export async function POST(req: Request) {
       }
 
       flow += minCapacity;
-      stepByStepExplanation.push(`Минимальная пропускная способность на пути: ${minCapacity}. Текущий максимальный поток: ${flow}.`);
+      stepByStepExplanation[
+        stepByStepExplanation.length - 1
+      ] += `. Текущий максимальный поток: ${flow}`;
 
-      stepByStepExplanation.push(`Ищем кратчайший (по количеству рёбер) увеличивающий путь из истока (вершина ${sourceId}) до стока (вершина ${sinkId}) с помощью поиска в ширину`);
-      path = bfs(cy, sourceId, sinkId); // Поиск нового увеличивающего пути
+      paths.push({
+        nodes: path,
+        flow: minCapacity,
+      });
+
+      pathNodes.forEach(node => {
+        flowPathsNodes.add(node);
+      })
+
+      pathEdges.forEach(edge => {
+        flowPathsEdges.add(edge);
+      })
+
+      /*for (let i = 0; i < path.length; i++) {
+        flowPathsNodes.add(path[i]);
+        let edge = cy
+          .edges()
+          .filter(
+            (edge) =>
+              edge.data("source") === path![i] &&
+              edge.data("target") === path![i + 1]
+          )[0];
+        if (edge) {
+          flowPathsEdges.push(edge.id());
+        } else {
+          const reverseEdge = cy.getElementById(`${path![i + 1]}-${path![i]}`);
+          flowPathsEdges.push(reverseEdge.id());
+        }
+      }*/
+
+      frames.push({
+        visitedNodes: Array.from(flowPathsNodes),
+        visitedEdges: Array.from(flowPathsEdges),
+        currentPathNodes: Array.from(pathNodes),
+        currentPathEdges: pathEdges,
+        flows: { ...currentFlows },
+        //residualCapacities: { ...residualCapacities },
+      });
+      stepByStepExplanation.push(
+        `Ищем новый кратчайший (по количеству рёбер) увеличивающий путь из истока (вершина \"${sourceNodeTitle}\") до стока (вершина \"${sinkNodeTitle}\") с помощью поиска в ширину`
+      );
+      path = bfs(newCy, sourceId, sinkId);
     }
 
-    let resultText = "### Результат выполнения алгоритма Эдмондса-Карпа\n\n";
-    resultText += `Максимальный поток: ${flow}\n\n`;
-    resultText += "Пошаговые объяснения:\n";
-    stepByStepExplanation.forEach((explanation, index) => {
-      resultText += `${index + 1}: ${explanation}\n\n`;
+    frames.push({
+      visitedNodes: Array.from(flowPathsNodes),
+      visitedEdges: Array.from(flowPathsEdges),
+      currentPathNodes: [],
+      currentPathEdges: [],
+      flows: { ...currentFlows },
+      //residualCapacities: { ...residualCapacities },
     });
+    stepByStepExplanation.push(
+      `Увеличивающий путь не найден, завершаем алгоритм`
+    );
 
-    return { resultText, stepByStepExplanation };
+    const totalVertices = cy.nodes().length;
+    const totalEdges = cy.edges().length;
+    const totalPaths = paths.length;
+    const steps = frames.length;
+
+    const shortResultText = `Максимальный поток от вершины \"${sourceNodeTitle}\" до вершины \"${sinkNodeTitle}\": ${flow}`;
+
+    const resultText = `### Результат выполнения алгоритма Эдмондса-Карпа
+
+**Вершина-исток:** "${sourceNodeTitle}"  
+**Вершина-сток:** "${sinkNodeTitle}"  
+**Максимальный поток:** ${flow}  
+
+**Пошаговое описание алгоритма:**
+
+${stepByStepExplanation
+  .map((step, index) => {
+    return `${index + 1}. ${step}`;
+  })
+  .join("\n")}
+
+**Пути потока:**
+${paths
+  .map((path, index) => {
+    return `  - **Путь ${index + 1}:** ${path.nodes
+      .map((node) => {
+        return `\"${cy.getElementById(node).data("title")}\"`;
+      })
+      .join(" 🠖 ")}, **Поток:** ${path.flow}`;
+  })
+  .join("\n")}
+
+**Статистика:**
+- **Всего вершин в графе:** ${totalVertices}
+- **Всего рёбер в графе:** ${totalEdges}
+- **Количество путей потока:** ${totalPaths}
+- **Количество шагов алгоритма:** ${steps}
+
+**Узнать больше об алгоритме Эдмондса-Карпа можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Алгоритм_Эдмондса_—_Карпа).**`;
+
+    return { frames, shortResultText, resultText, stepByStepExplanation };
   }
 
-  const { resultText, stepByStepExplanation } = edmondsKarp(
-    cy,
-    sourceId,
-    sinkId
-  );
+  const { frames, shortResultText, resultText, stepByStepExplanation } =
+    edmondsKarp(cy, newCy, sourceId, sinkId);
 
   return NextResponse.json({
-    //frames: frames,
-    //shortResultText: shortResultText,
+    frames: frames,
+    shortResultText: shortResultText,
     resultText: resultText,
     stepByStepExplanation: stepByStepExplanation,
   });
