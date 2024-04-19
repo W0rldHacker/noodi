@@ -152,7 +152,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     tarjan: "Нажмите \"Старт\" для запуска алгоритма Тарьяна",
     topologicalSort: "Нажмите \"Старт\" для запуска алгоритма топологической сортировки",
     graphColoring: "Нажмите \"Старт\" для запуска алгоритма цветовой раскраски вершин графа",
-    edmondsKarp: "Чтобы запустить алгоритм Эдмондса-Карпа, выберите сначала вершину-исток, а затем вершину-сток, до которой требуется найти максимальный поток"
+    edmondsKarp: "Чтобы запустить алгоритм Эдмондса-Карпа, выберите сначала вершину-исток, а затем вершину-сток, до которой требуется найти максимальный поток",
+    calculateDegrees: "Нажмите \"Старт\" для запуска алгоритма вычисления степеней вершин",
   }
 
   const toggleGrid = () => {
@@ -238,6 +239,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         removeLabels();
         break;
       }
+      case "calculateDegrees": {
+        createLabels();
+        break;
+      }
     }
 
     if (selectedAlgorithm.current !== algorithmSlug) {
@@ -251,7 +256,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         selectedAlgorithm.current === "kruskal" ||
         selectedAlgorithm.current === "tarjan" ||
         selectedAlgorithm.current === "topologicalSort" ||
-        selectedAlgorithm.current === "graphColoring"
+        selectedAlgorithm.current === "graphColoring" ||
+        selectedAlgorithm.current === "calculateDegrees"
       ) {
         setIsJustStartAlgorithm(true);
       } else {
@@ -393,6 +399,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     return cy.edges().every(edge => (edge as EdgeSingular).hasClass('oriented'));
   }
 
+  const areAllEdgesNotOriented = (cy: Core) => {
+    return cy.edges().every(edge => !(edge as EdgeSingular).hasClass('oriented'));
+  }
+
   const startAlgorithm = () => {
     if (algorithmMode) {
       if (!isAnimationReady) {
@@ -419,8 +429,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  //console.log(frames);
-                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -456,8 +464,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  //console.log(frames);
-                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -493,8 +499,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     resultText,
                     stepByStepExplanation,
                   } = response.data;
-                  //console.log(frames);
-                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -531,8 +535,6 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     stepByStepExplanation,
                     isCyclic,
                   } = response.data;
-                  //console.log(frames);
-                  //console.log(stepByStepExplanation);
                   setTimeout(() => {
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
@@ -564,8 +566,35 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                   resultText,
                   stepByStepExplanation,
                 } = response.data;
-                //console.log(frames);
-                //console.log(resultText);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "calculateDegrees": {
+            const graph = cyRef.current!.json();
+            const isGraphNotOriented = areAllEdgesNotOriented(cyRef.current!);
+            setIsLoading(true);
+            axios
+              .post("/api/calculateDegrees", { graph: graph, isNotOriented: isGraphNotOriented })
+              .then((response) => {
+                const {
+                  frames,
+                  shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
                 setTimeout(() => {
                   setIsLoading(false);
                   setIsJustStartAlgorithm(false);
@@ -1347,6 +1376,67 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateCalculateDegrees = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(nextState.currentNode).removeClass("visited");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("visited");
+      }
+      if (nextState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(nextState.currentEdge).removeClass("visited");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("visited");
+      }
+    } else {
+      if (prevState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(prevState.currentNode).removeClass("visited");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("visited");
+      }
+      if (prevState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(prevState.currentEdge).removeClass("visited");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("visited");
+      }
+    }
+
+    for (const key in currentState.degrees) {
+      if (currentState.degrees.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (typeof currentState.degrees[key] === 'number') {
+            label.innerHTML = `Степень: ${currentState.degrees[key]}`;
+          } else {
+            label.innerHTML = `Исход: ${currentState.degrees[key].out}, Заход: ${currentState.degrees[key].in}`;
+          }
+          
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateCalculateDegrees(index + 1);
+        } else {
+          animateCalculateDegrees(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -1393,6 +1483,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "edmondsKarp": {
         animateEdmondsKarp(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "calculateDegrees": {
+        animateCalculateDegrees(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -1449,6 +1543,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "edmondsKarp": {
         stopEdmondsKarp(needDisable);
+        break;
+      }
+      case "calculateDegrees": {
+        stopCalculateDegrees(needDisable);
         break;
       }
     }
@@ -1551,6 +1649,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopCalculateDegrees = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["calculateDegrees"]);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -1610,6 +1716,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateEdmondsKarp(animationFrame.current, true);
         break;
       }
+      case "calculateDegrees": {
+        animateCalculateDegrees(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -1667,6 +1777,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "edmondsKarp": {
         animateEdmondsKarp(animationFrame.current, true, "back");
+        break;
+      }
+      case "calculateDegrees": {
+        animateCalculateDegrees(animationFrame.current, true, "back");
         break;
       }
     }

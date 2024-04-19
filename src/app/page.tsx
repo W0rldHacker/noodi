@@ -208,7 +208,13 @@ export default function Home() {
                   </a>
                 </li>
                 <li><a>Нахождение радиуса и диаметра</a></li>
-                <li><a>Вычисление степеней вершин</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "calculateDegrees" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("calculateDegrees")}>
+                      Вычисление степеней вершин
+                    </button>
+                  </a>
+                </li>
               </ul>
             </details>
           </li>
