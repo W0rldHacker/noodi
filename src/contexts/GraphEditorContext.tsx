@@ -154,6 +154,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     graphColoring: "Нажмите \"Старт\" для запуска алгоритма цветовой раскраски вершин графа",
     edmondsKarp: "Чтобы запустить алгоритм Эдмондса-Карпа, выберите сначала вершину-исток, а затем вершину-сток, до которой требуется найти максимальный поток",
     calculateDegrees: "Нажмите \"Старт\" для запуска алгоритма вычисления степеней вершин",
+    findGraphProperties: "Нажмите \"Старт\" для запуска алгоритма нахождения радиуса, диаметра и центра графа",
+    findWeaklyConnectedComponents: "Нажмите \"Старт\" для запуска алгоритма нахождения компонент слабой связности графа",
+    findHamiltonianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова пути (цикла)",
   }
 
   const toggleGrid = () => {
@@ -243,6 +246,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         createLabels();
         break;
       }
+      case "findGraphProperties": {
+        createLabels();
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        createLabels();
+        break;
+      }
+      case "findHamiltonianPath": {
+        removeLabels();
+        break;
+      }
     }
 
     if (selectedAlgorithm.current !== algorithmSlug) {
@@ -257,7 +272,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         selectedAlgorithm.current === "tarjan" ||
         selectedAlgorithm.current === "topologicalSort" ||
         selectedAlgorithm.current === "graphColoring" ||
-        selectedAlgorithm.current === "calculateDegrees"
+        selectedAlgorithm.current === "calculateDegrees" ||
+        selectedAlgorithm.current === "findGraphProperties" ||
+        selectedAlgorithm.current === "findWeaklyConnectedComponents" ||
+        selectedAlgorithm.current === "findHamiltonianPath"
       ) {
         setIsJustStartAlgorithm(true);
       } else {
@@ -600,6 +618,96 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                   setIsJustStartAlgorithm(false);
                   setTooltipContent(shortResultText);
                   setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findGraphProperties": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findGraphProperties", { graph: graph })
+              .then((response) => {
+                const {
+                  frames,
+                  shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                console.log(frames);
+                console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findWeaklyConnectedComponents": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findWeaklyConnectedComponents", { graph: graph })
+              .then((response) => {
+                const {
+                  frames,
+                  shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                console.log(frames);
+                console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findHamiltonianPath": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findHamiltonianPath", { graph: graph })
+              .then((response) => {
+                const {
+                  frames,
+                  //shortResultText,
+                  resultText,
+                  //stepByStepExplanation,
+                } = response.data;
+                console.log(frames);
+                //console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(resultText);
+                  setResultText(resultText);
                   setAlgorithmDetails(resultText);
                   setStepByStepExplanation(stepByStepExplanation);
                   startAnimation(frames);
@@ -1437,6 +1545,162 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateFindGraphProperties = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(nextState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+    } else {
+      if (prevState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(prevState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+    }
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedCenterNodes = currentState.centerNodes.filter(
+        (x: string) => !prevState.centerNodes.includes(x)
+      );
+      const removedCenterNodes = prevState.centerNodes.filter(
+        (x: string) => !currentState.centerNodes.includes(x)
+      );
+
+      return {
+        addedCenterNodes,
+        removedCenterNodes,
+      };
+    };
+
+    const { addedCenterNodes, removedCenterNodes } = switchDirection === "back"
+        ? findDifferences(nextState, currentState, index)
+        : findDifferences(prevState, currentState, index);
+    
+    addedCenterNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedCenterNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+
+    for (const key in currentState.eccentricities) {
+      if (currentState.eccentricities.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.eccentricities[key] === null) {
+            label.innerHTML = ``;   
+          } else {
+            label.innerHTML = `e = ${currentState.eccentricities[key]}`;   
+          }
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateFindGraphProperties(index + 1);
+        } else {
+          animateFindGraphProperties(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
+  const animateFindWeaklyConnectedComponents = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedVisitedNodes = currentState.visitedNodes.filter(
+        (x: string) => !prevState.visitedNodes.includes(x)
+      );
+      const removedVisitedNodes = prevState.visitedNodes.filter(
+        (x: string) => !currentState.visitedNodes.includes(x)
+      );
+      const addedVisitedEdges = currentState.visitedEdges.filter(
+        (x: string) => !prevState.visitedEdges.includes(x)
+      );
+      const removedVisitedEdges = prevState.visitedEdges.filter(
+        (x: string) => !currentState.visitedEdges.includes(x)
+      );
+
+      return {
+        addedVisitedNodes: index === 0 ? currentState.visitedNodes : addedVisitedNodes,
+        removedVisitedNodes,
+        addedVisitedEdges,
+        removedVisitedEdges,
+      };
+    };
+
+    const { addedVisitedNodes, removedVisitedNodes, addedVisitedEdges, removedVisitedEdges } = switchDirection === "back"
+        ? findDifferences(nextState, currentState, index)
+        : findDifferences(prevState, currentState, index);
+    
+    addedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    for (const key in currentState.components) {
+      if (currentState.components.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.components[key] === null) {
+            label.innerHTML = ``;   
+          } else {
+            label.innerHTML = `${currentState.components[key]}`;   
+          }
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateFindWeaklyConnectedComponents(index + 1);
+        } else {
+          animateFindWeaklyConnectedComponents(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -1487,6 +1751,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "calculateDegrees": {
         animateCalculateDegrees(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findGraphProperties": {
+        animateFindGraphProperties(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        animateFindWeaklyConnectedComponents(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -1547,6 +1819,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "calculateDegrees": {
         stopCalculateDegrees(needDisable);
+        break;
+      }
+      case "findGraphProperties": {
+        stopFindGraphProperties(needDisable);
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        stopFindWeaklyConnectedComponents(needDisable);
         break;
       }
     }
@@ -1644,8 +1924,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       edge.data("flow", 0);
     })
     if (!needDisable) {
-      setTooltipContent(algorithmTooltips["graphColoring"]);
-      setIsJustStartAlgorithm(true);
+      setTooltipContent(algorithmTooltips["edmondsKarp"]);
     }
   }
 
@@ -1654,6 +1933,26 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     clearLabels();
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["calculateDegrees"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
+  const stopFindGraphProperties = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("processing");
+    cyRef.current!.nodes().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["findGraphProperties"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
+  const stopFindWeaklyConnectedComponents = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["findWeaklyConnectedComponents"]);
+      setIsJustStartAlgorithm(true);
     }
   }
 
@@ -1720,6 +2019,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateCalculateDegrees(animationFrame.current, true);
         break;
       }
+      case "findGraphProperties": {
+        animateFindGraphProperties(animationFrame.current, true);
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        animateFindWeaklyConnectedComponents(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -1781,6 +2088,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "calculateDegrees": {
         animateCalculateDegrees(animationFrame.current, true, "back");
+        break;
+      }
+      case "findGraphProperties": {
+        animateFindGraphProperties(animationFrame.current, true, "back");
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        animateFindWeaklyConnectedComponents(animationFrame.current, true, "back");
         break;
       }
     }

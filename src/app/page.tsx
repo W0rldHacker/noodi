@@ -157,9 +157,21 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Нахождение компонент связности</a></li>
-                <li><a>Поиск Гамильтонова пути</a></li>
-                <li><a>Поиск Гамильтонова цикла</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findWeaklyConnectedComponents" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findWeaklyConnectedComponents")}>
+                      Нахождение компонент слабой связности
+                    </button>
+                  </a>
+                </li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findHamiltonianPath" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findHamiltonianPath")}>
+                      Поиск Гамильтонова пути (цикла)
+                    </button>
+                  </a>
+                </li>
+                {/*<li><a>Поиск Гамильтонова цикла</a></li>*/}
                 <li><a>Поиск Эйлерова пути</a></li>
                 <li><a>Поиск Эйлерова цикла</a></li>
               </ul>
@@ -207,7 +219,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Нахождение радиуса и диаметра</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findGraphProperties" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findGraphProperties")}>
+                      Нахождение радиуса и диаметра
+                    </button>
+                  </a>
+                </li>
                 <li>
                   <a className={`block p-0 ${selectedAlgorithm.current === "calculateDegrees" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("calculateDegrees")}>
