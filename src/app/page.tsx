@@ -167,13 +167,31 @@ export default function Home() {
                 <li>
                   <a className={`block p-0 ${selectedAlgorithm.current === "findHamiltonianPath" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findHamiltonianPath")}>
-                      Поиск Гамильтонова пути (цикла)
+                      Поиск гамильтонова пути
                     </button>
                   </a>
                 </li>
-                {/*<li><a>Поиск Гамильтонова цикла</a></li>*/}
-                <li><a>Поиск Эйлерова пути</a></li>
-                <li><a>Поиск Эйлерова цикла</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findHamiltonianCycle" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findHamiltonianCycle")}>
+                      Поиск гамильтонова цикла
+                    </button>
+                  </a>
+                </li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findEulerianPath" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findEulerianPath")}>
+                      Поиск эйлерова пути
+                    </button>
+                  </a>
+                </li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findEulerianCycle" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findEulerianCycle")}>
+                      Поиск эйлерова цикла
+                    </button>
+                  </a>
+                </li>
               </ul>
             </details>
             <details open>

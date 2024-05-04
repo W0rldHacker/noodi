@@ -156,7 +156,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     calculateDegrees: "Нажмите \"Старт\" для запуска алгоритма вычисления степеней вершин",
     findGraphProperties: "Нажмите \"Старт\" для запуска алгоритма нахождения радиуса, диаметра и центра графа",
     findWeaklyConnectedComponents: "Нажмите \"Старт\" для запуска алгоритма нахождения компонент слабой связности графа",
-    findHamiltonianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова пути (цикла)",
+    findHamiltonianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова пути",
+    findHamiltonianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова цикла",
+    findEulerianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова пути",
+    findEulerianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова цикла",
   }
 
   const toggleGrid = () => {
@@ -258,6 +261,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         removeLabels();
         break;
       }
+      case "findHamiltonianCycle": {
+        removeLabels();
+        break;
+      }
+      case "findEulerianPath": {
+        removeLabels();
+        break;
+      }
+      case "findEulerianCycle": {
+        removeLabels();
+        break;
+      }
     }
 
     if (selectedAlgorithm.current !== algorithmSlug) {
@@ -275,7 +290,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         selectedAlgorithm.current === "calculateDegrees" ||
         selectedAlgorithm.current === "findGraphProperties" ||
         selectedAlgorithm.current === "findWeaklyConnectedComponents" ||
-        selectedAlgorithm.current === "findHamiltonianPath"
+        selectedAlgorithm.current === "findHamiltonianPath" ||
+        selectedAlgorithm.current === "findHamiltonianCycle" ||
+        selectedAlgorithm.current === "findEulerianPath" ||
+        selectedAlgorithm.current === "findEulerianCycle"
       ) {
         setIsJustStartAlgorithm(true);
       } else {
@@ -693,16 +711,106 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const graph = cyRef.current!.json();
             setIsLoading(true);
             axios
-              .post("/api/findHamiltonianPath", { graph: graph })
+              .post("/api/findHamiltonianPath", { graph: graph, needCycle: false })
               .then((response) => {
                 const {
                   frames,
-                  //shortResultText,
+                  shortResultText,
                   resultText,
-                  //stepByStepExplanation,
+                  stepByStepExplanation,
                 } = response.data;
                 console.log(frames);
-                //console.log(stepByStepExplanation);
+                console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findHamiltonianCycle": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findHamiltonianPath", { graph: graph, needCycle: true })
+              .then((response) => {
+                const {
+                  frames,
+                  shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                console.log(frames);
+                console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(shortResultText);
+                  setResultText(shortResultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findEulerianPath": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findEulerianPath", { graph: graph })
+              .then((response) => {
+                const {
+                  //frames,
+                  //shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                //console.log(frames);
+                console.log(stepByStepExplanation);
+                setTimeout(() => {
+                  setIsLoading(false);
+                  setIsJustStartAlgorithm(false);
+                  setTooltipContent(resultText);
+                  setResultText(resultText);
+                  setAlgorithmDetails(resultText);
+                  setStepByStepExplanation(stepByStepExplanation);
+                  startAnimation(frames);
+                }, 1000);
+              })
+              .catch((error) => {
+                setIsLoading(false);
+                console.error("Ошибка запроса:", error);
+              });
+            break;
+          }
+          case "findEulerianCycle": {
+            const graph = cyRef.current!.json();
+            setIsLoading(true);
+            axios
+              .post("/api/findEulerianPath", { graph: graph })
+              .then((response) => {
+                const {
+                  //frames,
+                  //shortResultText,
+                  resultText,
+                  stepByStepExplanation,
+                } = response.data;
+                //console.log(frames);
+                console.log(stepByStepExplanation);
                 setTimeout(() => {
                   setIsLoading(false);
                   setIsJustStartAlgorithm(false);
@@ -1701,6 +1809,71 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateFindHamiltonianPath = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      const addedVisitedNodes = currentState.visitedNodes.filter(
+        (x: string) => !prevState.visitedNodes.includes(x)
+      );
+      const removedVisitedNodes = prevState.visitedNodes.filter(
+        (x: string) => !currentState.visitedNodes.includes(x)
+      );
+      const addedVisitedEdges = currentState.visitedEdges.filter(
+        (x: string) => !prevState.visitedEdges.includes(x)
+      );
+      const removedVisitedEdges = prevState.visitedEdges.filter(
+        (x: string) => !currentState.visitedEdges.includes(x)
+      );
+
+      return {
+        addedVisitedNodes: index === 0 ? currentState.visitedNodes : addedVisitedNodes,
+        removedVisitedNodes,
+        addedVisitedEdges,
+        removedVisitedEdges,
+      };
+    };
+
+    const { addedVisitedNodes, removedVisitedNodes, addedVisitedEdges, removedVisitedEdges } = switchDirection === "back"
+        ? findDifferences(nextState, currentState, index)
+        : findDifferences(prevState, currentState, index);
+    
+    addedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedVisitedNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedVisitedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateFindHamiltonianPath(index + 1);
+        } else {
+          animateFindHamiltonianPath(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -1759,6 +1932,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findWeaklyConnectedComponents": {
         animateFindWeaklyConnectedComponents(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findHamiltonianPath": {
+        animateFindHamiltonianPath(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findHamiltonianCycle": {
+        animateFindHamiltonianPath(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -1827,6 +2008,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findWeaklyConnectedComponents": {
         stopFindWeaklyConnectedComponents(needDisable);
+        break;
+      }
+      case "findHamiltonianPath": {
+        stopFindHamiltonianPath(needDisable);
+        break;
+      }
+      case "findHamiltonianCycle": {
+        stopFindHamiltonianPath(needDisable);
         break;
       }
     }
@@ -1956,6 +2145,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopFindHamiltonianPath = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("visited");
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["findHamiltonianCycle"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -2027,6 +2224,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindWeaklyConnectedComponents(animationFrame.current, true);
         break;
       }
+      case "findHamiltonianPath": {
+        animateFindHamiltonianPath(animationFrame.current, true);
+        break;
+      }
+      case "findHamiltonianCycle": {
+        animateFindHamiltonianPath(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -2096,6 +2301,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findWeaklyConnectedComponents": {
         animateFindWeaklyConnectedComponents(animationFrame.current, true, "back");
+        break;
+      }
+      case "findHamiltonianPath": {
+        animateFindHamiltonianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findHamiltonianCycle": {
+        animateFindHamiltonianPath(animationFrame.current, true, "back");
         break;
       }
     }
