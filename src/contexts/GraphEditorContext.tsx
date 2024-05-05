@@ -266,11 +266,11 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         break;
       }
       case "findEulerianPath": {
-        removeLabels();
+        createLabels();
         break;
       }
       case "findEulerianCycle": {
-        removeLabels();
+        createLabels();
         break;
       }
     }
@@ -405,14 +405,20 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     loopedMode.current = !loopedMode.current;
   }
 
-  const isGraphConnected = (cy: Core) => {
-    if (cy.elements().nodes().length === 0) {
+  const isGraphConnected = (cy: Core, withoutIsolatedNodes: boolean = false) => {
+    let nodes = cy.nodes();
+
+    if (withoutIsolatedNodes) {
+      nodes = nodes.filter(node => node.connectedEdges().length > 0);
+    }
+    
+    if (nodes.length === 0) {
       return true;
     }
   
     let visited = new Set<cytoscape.NodeSingular>();
     let queue: cytoscape.NodeSingular[] = [];
-    let nodes = cy.nodes();
+    //let nodes = cy.nodes();
   
     queue.push(nodes[0]);
   
@@ -437,6 +443,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
 
   const areAllEdgesNotOriented = (cy: Core) => {
     return cy.edges().every(edge => !(edge as EdgeSingular).hasClass('oriented'));
+  }
+
+  const hasOrientedEdges = (cy: Core) => {
+    return cy.edges().some(edge => (edge as EdgeSingular).hasClass('oriented'));
   }
 
   const startAlgorithm = () => {
@@ -623,7 +633,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const isGraphNotOriented = areAllEdgesNotOriented(cyRef.current!);
             setIsLoading(true);
             axios
-              .post("/api/calculateDegrees", { graph: graph, isNotOriented: isGraphNotOriented })
+              .post("/api/calculateDegrees", {
+                graph: graph,
+                isNotOriented: isGraphNotOriented,
+              })
               .then((response) => {
                 const {
                   frames,
@@ -711,7 +724,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const graph = cyRef.current!.json();
             setIsLoading(true);
             axios
-              .post("/api/findHamiltonianPath", { graph: graph, needCycle: false })
+              .post("/api/findHamiltonianPath", {
+                graph: graph,
+                needCycle: false,
+              })
               .then((response) => {
                 const {
                   frames,
@@ -741,7 +757,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const graph = cyRef.current!.json();
             setIsLoading(true);
             axios
-              .post("/api/findHamiltonianPath", { graph: graph, needCycle: true })
+              .post("/api/findHamiltonianPath", {
+                graph: graph,
+                needCycle: true,
+              })
               .then((response) => {
                 const {
                   frames,
@@ -798,33 +817,44 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             break;
           }
           case "findEulerianCycle": {
-            const graph = cyRef.current!.json();
-            setIsLoading(true);
-            axios
-              .post("/api/findEulerianPath", { graph: graph })
-              .then((response) => {
-                const {
-                  //frames,
-                  //shortResultText,
-                  resultText,
-                  stepByStepExplanation,
-                } = response.data;
-                //console.log(frames);
-                console.log(stepByStepExplanation);
-                setTimeout(() => {
+            const isConnected = isGraphConnected(cyRef.current!, true);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому эйлеров цикл не существует"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              const isOriented = hasOrientedEdges(cyRef.current!);
+              setIsLoading(true);
+              axios
+                .post("/api/findEulerianPath", {
+                  graph: graph,
+                  isOriented: isOriented,
+                })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
                   setIsLoading(false);
-                  setIsJustStartAlgorithm(false);
-                  setTooltipContent(resultText);
-                  setResultText(resultText);
-                  setAlgorithmDetails(resultText);
-                  setStepByStepExplanation(stepByStepExplanation);
-                  startAnimation(frames);
-                }, 1000);
-              })
-              .catch((error) => {
-                setIsLoading(false);
-                console.error("Ошибка запроса:", error);
-              });
+                  console.error("Ошибка запроса:", error);
+                });
+            }
             break;
           }
         }
@@ -1874,6 +1904,119 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateFindEulerianCycle = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(nextState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+      if (nextState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(nextState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    } else {
+      if (prevState.currentNode !== currentState.currentNode) {
+        cyRef.current!.getElementById(prevState.currentNode).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentNode).addClass("processing");
+      }
+      if (prevState.currentEdge !== currentState.currentEdge) {
+        cyRef.current!.getElementById(prevState.currentEdge).removeClass("processing");
+        cyRef.current!.getElementById(currentState.currentEdge).addClass("processing");
+      }
+    }
+
+    const findDifferences = (prevState: any, currentState: any, index: number) => {
+      /*const addedCycleNodes = currentState.cycleNodes.filter(
+        (x: string) => !prevState.cycleNodes.includes(x)
+      );
+      const removedCycleNodes = prevState.cycleNodes.filter(
+        (x: string) => !currentState.cycleNodes.includes(x)
+      );*/
+      const addedCycleEdges = currentState.cycleEdges.filter(
+        (x: string) => !prevState.cycleEdges.includes(x)
+      );
+      const removedCycleEdges = prevState.cycleEdges.filter(
+        (x: string) => !currentState.cycleEdges.includes(x)
+      );
+      const addedProcessedEdges = currentState.processedEdges.filter(
+        (x: string) => !prevState.processedEdges.includes(x)
+      );
+      const removedProcessedEdges = prevState.processedEdges.filter(
+        (x: string) => !currentState.processedEdges.includes(x)
+      );
+
+      return {
+        //addedCycleNodes,
+        //removedCycleNodes,
+        addedCycleEdges,
+        removedCycleEdges,
+        addedProcessedEdges,
+        removedProcessedEdges
+      };
+    };
+
+    const { addedCycleEdges, removedCycleEdges, addedProcessedEdges, removedProcessedEdges } = switchDirection === "back"
+        ? findDifferences(nextState, currentState, index)
+        : findDifferences(prevState, currentState, index);
+    
+    /*addedCycleNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedCycleNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })*/
+    addedCycleEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedCycleEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+    addedProcessedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("processed");
+    })
+    removedProcessedEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("processed");
+    })
+
+    for (const key in currentState.vertexOrder) {
+      if (currentState.vertexOrder.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.vertexOrder[key] === null) {
+            label.innerHTML = ``;   
+          } else {
+            label.innerHTML = `${currentState.vertexOrder[key]}`;   
+          }
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateFindEulerianCycle(index + 1);
+        } else {
+          animateFindEulerianCycle(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -1940,6 +2083,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findHamiltonianCycle": {
         animateFindHamiltonianPath(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findEulerianCycle": {
+        animateFindEulerianCycle(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -2016,6 +2163,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findHamiltonianCycle": {
         stopFindHamiltonianPath(needDisable);
+        break;
+      }
+      case "findEulerianCycle": {
+        stopFindEulerianCycle(needDisable);
         break;
       }
     }
@@ -2153,6 +2304,17 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopFindEulerianCycle = (needDisable: boolean) => {
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.edges().removeClass("processed");
+    cyRef.current!.edges().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["findEulerianCycle"]);
+      setIsJustStartAlgorithm(true);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -2232,6 +2394,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindHamiltonianPath(animationFrame.current, true);
         break;
       }
+      case "findEulerianCycle": {
+        animateFindEulerianCycle(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -2309,6 +2475,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findHamiltonianCycle": {
         animateFindHamiltonianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findEulerianCycle": {
+        animateFindEulerianCycle(animationFrame.current, true, "back");
         break;
       }
     }
@@ -2500,6 +2670,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
           }
         },
         {
+          selector: "edge.processed",
+          style: {
+            "line-color": "#bcc0cc",
+            "target-arrow-color": "#bcc0cc",
+            color: "#4c4f69",
+          }
+        },
+        {
           selector: "node.color-1",
           style: {
             "background-color": "#e64553",
@@ -2669,6 +2847,14 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
           style: {
             "background-color": "#51576d",
             "border-color": "#51576d",
+            color: "#c6d0f5",
+          }
+        },
+        {
+          selector: "edge.processed",
+          style: {
+            "line-color": "#51576d",
+            "target-arrow-color": "#51576d",
             color: "#c6d0f5",
           }
         },

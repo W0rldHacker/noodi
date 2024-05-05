@@ -21,8 +21,8 @@ export async function POST(req: Request) {
       const currentNodeTitle = cy.getElementById(currentNodeId).data("title");
       let stepDescription = currentNodeId !== startNodeId
           ? `Переходим от вершины \"${cy.getElementById(prevNodeId).data("title")}\" к вершине \"${currentNodeTitle}\"`
-          : `Начинаем обход с начальной вершины **"${currentNodeTitle}"**`;
-        stepByStepExplanation.push(stepDescription);
+          : `Начинаем обход с начальной вершины "${currentNodeTitle}"`;
+      stepByStepExplanation.push(stepDescription);
       frames.push({
         visitedNodes: Array.from(visitedNodes),
         visitedEdges: Array.from(visitedEdges)
@@ -117,6 +117,13 @@ export async function POST(req: Request) {
     const resultText = `### Результат выполнения алгоритма нахождения гамильтонова ${needCycle ? 'цикла' : 'пути'}  
 
 **Гамильтонов ${needCycle ? `цикл${found ? `:** ${cycle.join(' 🠖 ')}` : ' не найден'}` : `путь${found ? `:** ${path.join(' 🠖 ')}` : ' не найден'}`}  
+
+**Пошаговое описание алгоритма:**
+${stepByStepExplanation
+  .map((step, index) => {
+    return `${index + 1}. ${step}`;
+  })
+  .join("\n")}
 
 **Статистика:**  
 - Общее количество вершин: ${totalVertices}  
