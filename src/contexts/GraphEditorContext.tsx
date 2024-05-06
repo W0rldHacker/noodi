@@ -123,7 +123,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   //const [isAnimationEnded, setIsAnimationEnded] = useState(false);
   const [stepByStepExplanation, setStepByStepExplanation] = useState<string[]>([]);
-  const [resultText, setResultText] = useState("");
+  //const [resultText, setResultText] = useState("");
+  const resultText = useRef("");
   const [manualSwitch, setManualSwitch] = useState(false);
   const [sourceNode, setSourceNode] = useState("");
   const [isJustStartAlgorithm, setIsJustStartAlgorithm] = useState(false);
@@ -160,6 +161,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     findHamiltonianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова цикла",
     findEulerianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова пути",
     findEulerianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова цикла",
+  }
+
+  const setResultText = (content: string) => {
+    resultText.current = content;
   }
 
   const toggleGrid = () => {
@@ -702,8 +707,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                   resultText,
                   stepByStepExplanation,
                 } = response.data;
-                console.log(frames);
-                console.log(stepByStepExplanation);
+                //console.log(frames);
+                //console.log(stepByStepExplanation);
                 setTimeout(() => {
                   setIsLoading(false);
                   setIsJustStartAlgorithm(false);
@@ -721,99 +726,128 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             break;
           }
           case "findHamiltonianPath": {
-            const graph = cyRef.current!.json();
-            setIsLoading(true);
-            axios
-              .post("/api/findHamiltonianPath", {
-                graph: graph,
-                needCycle: false,
-              })
-              .then((response) => {
-                const {
-                  frames,
-                  shortResultText,
-                  resultText,
-                  stepByStepExplanation,
-                } = response.data;
-                console.log(frames);
-                console.log(stepByStepExplanation);
-                setTimeout(() => {
+            const isConnected = isGraphConnected(cyRef.current!, true);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому эйлеров цикл не существует"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              axios
+                .post("/api/findHamiltonianPath", {
+                  graph: graph,
+                  needCycle: false,
+                })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  console.log(frames);
+                  console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
                   setIsLoading(false);
-                  setIsJustStartAlgorithm(false);
-                  setTooltipContent(shortResultText);
-                  setResultText(shortResultText);
-                  setAlgorithmDetails(resultText);
-                  setStepByStepExplanation(stepByStepExplanation);
-                  startAnimation(frames);
-                }, 1000);
-              })
-              .catch((error) => {
-                setIsLoading(false);
-                console.error("Ошибка запроса:", error);
-              });
+                  console.error("Ошибка запроса:", error);
+                });
+            }
             break;
           }
           case "findHamiltonianCycle": {
-            const graph = cyRef.current!.json();
-            setIsLoading(true);
-            axios
-              .post("/api/findHamiltonianPath", {
-                graph: graph,
-                needCycle: true,
-              })
-              .then((response) => {
-                const {
-                  frames,
-                  shortResultText,
-                  resultText,
-                  stepByStepExplanation,
-                } = response.data;
-                console.log(frames);
-                console.log(stepByStepExplanation);
-                setTimeout(() => {
+            const isConnected = isGraphConnected(cyRef.current!, true);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому эйлеров цикл не существует"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              setIsLoading(true);
+              axios
+                .post("/api/findHamiltonianPath", {
+                  graph: graph,
+                  needCycle: true,
+                })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
+                  console.log(shortResultText);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    setResultText(shortResultText);
+                    setAlgorithmDetails(resultText);
+                    setStepByStepExplanation(stepByStepExplanation);
+                    startAnimation(frames);
+                  }, 1000);
+                })
+                .catch((error) => {
                   setIsLoading(false);
-                  setIsJustStartAlgorithm(false);
-                  setTooltipContent(shortResultText);
-                  setResultText(shortResultText);
-                  setAlgorithmDetails(resultText);
-                  setStepByStepExplanation(stepByStepExplanation);
-                  startAnimation(frames);
-                }, 1000);
-              })
-              .catch((error) => {
-                setIsLoading(false);
-                console.error("Ошибка запроса:", error);
-              });
+                  console.error("Ошибка запроса:", error);
+                });
+            }
             break;
           }
           case "findEulerianPath": {
-            const graph = cyRef.current!.json();
-            setIsLoading(true);
-            axios
-              .post("/api/findEulerianPath", { graph: graph })
-              .then((response) => {
-                const {
-                  //frames,
-                  //shortResultText,
-                  resultText,
-                  stepByStepExplanation,
-                } = response.data;
-                //console.log(frames);
-                console.log(stepByStepExplanation);
-                setTimeout(() => {
+            const isConnected = isGraphConnected(cyRef.current!, true);
+            if (!isConnected) {
+              setTooltipContent(
+                "Граф не является связным, поэтому эйлеров цикл не существует"
+              );
+            } else {
+              const graph = cyRef.current!.json();
+              const isOriented = hasOrientedEdges(cyRef.current!);
+              setIsLoading(true);
+              axios
+                .post("/api/findEulerianPath", {
+                  graph: graph,
+                  isOriented: isOriented,
+                  needCycle: false,
+                })
+                .then((response) => {
+                  const {
+                    frames,
+                    shortResultText,
+                    resultText,
+                    stepByStepExplanation,
+                  } = response.data;
+                  //console.log(frames);
+                  //console.log(stepByStepExplanation);
+                  setTimeout(() => {
+                    setIsLoading(false);
+                    setIsJustStartAlgorithm(false);
+                    setTooltipContent(shortResultText);
+                    if (resultText !== "") {
+                      setResultText(shortResultText);
+                      setAlgorithmDetails(resultText);
+                      setStepByStepExplanation(stepByStepExplanation);
+                      startAnimation(frames);
+                    }
+                  }, 1000);
+                })
+                .catch((error) => {
                   setIsLoading(false);
-                  setIsJustStartAlgorithm(false);
-                  setTooltipContent(resultText);
-                  setResultText(resultText);
-                  setAlgorithmDetails(resultText);
-                  setStepByStepExplanation(stepByStepExplanation);
-                  startAnimation(frames);
-                }, 1000);
-              })
-              .catch((error) => {
-                setIsLoading(false);
-                console.error("Ошибка запроса:", error);
-              });
+                  console.error("Ошибка запроса:", error);
+                });
+            }
             break;
           }
           case "findEulerianCycle": {
@@ -830,6 +864,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                 .post("/api/findEulerianPath", {
                   graph: graph,
                   isOriented: isOriented,
+                  needCycle: true,
                 })
                 .then((response) => {
                   const {
@@ -844,10 +879,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
                     setIsLoading(false);
                     setIsJustStartAlgorithm(false);
                     setTooltipContent(shortResultText);
-                    setResultText(shortResultText);
-                    setAlgorithmDetails(resultText);
-                    setStepByStepExplanation(stepByStepExplanation);
-                    startAnimation(frames);
+                    if (resultText !== "") {
+                      setResultText(shortResultText);
+                      setAlgorithmDetails(resultText);
+                      setStepByStepExplanation(stepByStepExplanation);
+                      startAnimation(frames);
+                    }
                   }, 1000);
                 })
                 .catch((error) => {
@@ -1904,7 +1941,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
-  const animateFindEulerianCycle = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+  const animateFindEulerianPath = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
     if (!isAnimationPlaying.current && !manualSwitch) return;
 
     animationFrame.current = index;
@@ -1932,18 +1969,18 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
     }
 
-    const findDifferences = (prevState: any, currentState: any, index: number) => {
+    const findDifferences = (prevState: any, currentState: any) => {
       /*const addedCycleNodes = currentState.cycleNodes.filter(
         (x: string) => !prevState.cycleNodes.includes(x)
       );
       const removedCycleNodes = prevState.cycleNodes.filter(
         (x: string) => !currentState.cycleNodes.includes(x)
       );*/
-      const addedCycleEdges = currentState.cycleEdges.filter(
-        (x: string) => !prevState.cycleEdges.includes(x)
+      const addedCycleEdges = currentState.pathEdges.filter(
+        (x: string) => !prevState.pathEdges.includes(x)
       );
-      const removedCycleEdges = prevState.cycleEdges.filter(
-        (x: string) => !currentState.cycleEdges.includes(x)
+      const removedCycleEdges = prevState.pathEdges.filter(
+        (x: string) => !currentState.pathEdges.includes(x)
       );
       const addedProcessedEdges = currentState.processedEdges.filter(
         (x: string) => !prevState.processedEdges.includes(x)
@@ -1963,8 +2000,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     };
 
     const { addedCycleEdges, removedCycleEdges, addedProcessedEdges, removedProcessedEdges } = switchDirection === "back"
-        ? findDifferences(nextState, currentState, index)
-        : findDifferences(prevState, currentState, index);
+        ? findDifferences(nextState, currentState)
+        : findDifferences(prevState, currentState);
     
     /*addedCycleNodes.forEach((node: string) => {
       cyRef.current!.getElementById(node).addClass("visited");
@@ -2009,9 +2046,9 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     if (isAnimationPlaying.current) {
       setTimeout(() => {
         if (index + 1 < animationFrames.current.length) {
-          animateFindEulerianCycle(index + 1);
+          animateFindEulerianPath(index + 1);
         } else {
-          animateFindEulerianCycle(0);
+          animateFindEulerianPath(0);
         }
       }, 900 / animationSpeed.current);
     }
@@ -2021,7 +2058,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     isAnimationPlaying.current = true;
     setIsPlaying(true);
     if (manualSwitch) {
-      setTooltipContent(resultText);
+      setTooltipContent(resultText.current);
       setManualSwitch(false);
     }
     switch (selectedAlgorithm.current) {
@@ -2085,8 +2122,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindHamiltonianPath(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
+      case "findEulerianPath": {
+        animateFindEulerianPath(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
       case "findEulerianCycle": {
-        animateFindEulerianCycle(isAnimationEnded.current ? 0 : animationFrame.current);
+        animateFindEulerianPath(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -2165,8 +2206,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         stopFindHamiltonianPath(needDisable);
         break;
       }
+      case "findEulerianPath": {
+        stopFindEulerianPath(needDisable);
+        break;
+      }
       case "findEulerianCycle": {
-        stopFindEulerianCycle(needDisable);
+        stopFindEulerianPath(needDisable);
         break;
       }
     }
@@ -2219,6 +2264,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
 
   const stopKruskal = (needDisable: boolean) => {
     cyRef.current!.elements().removeClass("visited");
+    cyRef.current!.elements().removeClass("processing");
     if (!needDisable) {
       setTooltipContent(algorithmTooltips["kruskal"]);
       setIsJustStartAlgorithm(true);
@@ -2304,7 +2350,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
-  const stopFindEulerianCycle = (needDisable: boolean) => {
+  const stopFindEulerianPath = (needDisable: boolean) => {
     cyRef.current!.elements().removeClass("processing");
     cyRef.current!.edges().removeClass("processed");
     cyRef.current!.edges().removeClass("visited");
@@ -2328,7 +2374,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
     animationFrame.current = animationFrame.current >= animationFrames.current.length - 1 ? 0 : animationFrame.current + 1;
     if (animationFrame.current + 1 >= animationFrames.current.length) {
-      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText ? "  \n" + resultText : ""}`)
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText.current ? "  \n" + resultText.current : ""}`)
     } else {
       setTooltipContent(stepByStepExplanation[animationFrame.current]);
     }
@@ -2394,8 +2440,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindHamiltonianPath(animationFrame.current, true);
         break;
       }
+      case "findEulerianPath": {
+        animateFindEulerianPath(animationFrame.current, true);
+        break;
+      }
       case "findEulerianCycle": {
-        animateFindEulerianCycle(animationFrame.current, true);
+        animateFindEulerianPath(animationFrame.current, true);
         break;
       }
     }
@@ -2408,7 +2458,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
     animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
     if (animationFrame.current + 1 >= animationFrames.current.length) {
-      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText ? "  \n" + resultText : ""}`)
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText.current ? "  \n" + resultText.current : ""}`)
     } else {
       setTooltipContent(stepByStepExplanation[animationFrame.current]);
     }
@@ -2477,8 +2527,12 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindHamiltonianPath(animationFrame.current, true, "back");
         break;
       }
+      case "findEulerianPath": {
+        animateFindEulerianPath(animationFrame.current, true, "back");
+        break;
+      }
       case "findEulerianCycle": {
-        animateFindEulerianCycle(animationFrame.current, true, "back");
+        animateFindEulerianPath(animationFrame.current, true, "back");
         break;
       }
     }

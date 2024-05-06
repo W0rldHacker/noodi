@@ -10,7 +10,6 @@ import Tooltip from './Tooltip';
 import NodeContextMenu from './NodeContextMenu';
 import EdgeContextMenu from './EdgeContextMenu';
 import AnimationToolbar from './AnimationToolbar';
-import { createPopper } from '@popperjs/core';
 cytoscape.use( popper );
 
 const CytoscapeComponent: React.FC = () => {
