@@ -149,7 +149,13 @@ export default function Home() {
                     </button>
                   </a>
                 </li>
-                <li><a>Алгоритм Флойда</a></li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findCycleFloydsAlgorithm" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findCycleFloydsAlgorithm")}>
+                      Алгоритм Флойда
+                    </button>
+                  </a>
+                </li>
                 <li>
                   <a className={`block p-0 ${selectedAlgorithm.current === "topologicalSort" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("topologicalSort")}>

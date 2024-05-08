@@ -161,6 +161,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     findHamiltonianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения гамильтонова цикла",
     findEulerianPath: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова пути",
     findEulerianCycle: "Нажмите \"Старт\" для запуска алгоритма нахождения эйлерова цикла",
+    findCycleFloydsAlgorithm: "Чтобы запустить алгоритм \"черепахи и зайца\" Флойда для нахождения циклов в функциональном графе, выберите начальную вершину, с которой будет начинаться поиск цикла",
   }
 
   const setResultText = (content: string) => {
@@ -275,6 +276,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         break;
       }
       case "findEulerianCycle": {
+        createLabels();
+        break;
+      }
+      case "findCycleFloydsAlgorithm": {
         createLabels();
         break;
       }
@@ -2054,6 +2059,113 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   };
 
+  const animateFindCycleFloydsAlgorithm = (index: number = 0, manualSwitch: boolean = false, switchDirection: "back" | "forward" = "forward") => {
+    if (!isAnimationPlaying.current && !manualSwitch) return;
+
+    animationFrame.current = index;
+    const prevState = animationFrames.current[(index - 1 + animationFrames.current.length) % animationFrames.current.length];
+    const currentState = animationFrames.current[index];
+    const nextState = animationFrames.current[(index + 1) % animationFrames.current.length];
+
+    if (switchDirection === "back") {
+      if (nextState.hareNode !== currentState.hareNode) {
+        cyRef.current!.getElementById(nextState.hareNode).removeClass("color-3");
+        cyRef.current!.getElementById(currentState.hareNode).addClass("color-3");
+      }
+      if (nextState.turtleNode !== currentState.turtleNode) {
+        cyRef.current!.getElementById(nextState.turtleNode).removeClass("color-4");
+        cyRef.current!.getElementById(currentState.turtleNode).addClass("color-4");
+      }
+      if (nextState.bothNode !== currentState.bothNode) {
+        cyRef.current!.getElementById(nextState.bothNode).removeClass("color-2");
+        cyRef.current!.getElementById(currentState.bothNode).addClass("color-2");
+      }
+    } else {
+      if (prevState.hareNode !== currentState.hareNode) {
+        cyRef.current!.getElementById(prevState.hareNode).removeClass("color-3");
+        cyRef.current!.getElementById(currentState.hareNode).addClass("color-3");
+      }
+      if (prevState.turtleNode !== currentState.turtleNode) {
+        cyRef.current!.getElementById(prevState.turtleNode).removeClass("color-4");
+        cyRef.current!.getElementById(currentState.turtleNode).addClass("color-4");
+      }
+      if (prevState.bothNode !== currentState.bothNode) {
+        cyRef.current!.getElementById(prevState.bothNode).removeClass("color-2");
+        cyRef.current!.getElementById(currentState.bothNode).addClass("color-2");
+      }
+    }
+
+    const findDifferences = (prevState: any, currentState: any) => {
+      const addedCycleNodes = currentState.cycleNodes.filter(
+        (x: string) => !prevState.cycleNodes.includes(x)
+      );
+      const removedCycleNodes = prevState.cycleNodes.filter(
+        (x: string) => !currentState.cycleNodes.includes(x)
+      );
+      const addedCycleEdges = currentState.cycleEdges.filter(
+        (x: string) => !prevState.cycleEdges.includes(x)
+      );
+      const removedCycleEdges = prevState.cycleEdges.filter(
+        (x: string) => !currentState.cycleEdges.includes(x)
+      );
+
+      return {
+        addedCycleNodes,
+        removedCycleNodes,
+        addedCycleEdges,
+        removedCycleEdges,
+      };
+    };
+
+    const { addedCycleNodes, removedCycleNodes, addedCycleEdges, removedCycleEdges } = switchDirection === "back"
+        ? findDifferences(nextState, currentState)
+        : findDifferences(prevState, currentState);
+    
+    addedCycleNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).addClass("visited");
+    })
+    removedCycleNodes.forEach((node: string) => {
+      cyRef.current!.getElementById(node).removeClass("visited");
+    })
+    addedCycleEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).addClass("visited");
+    })
+    removedCycleEdges.forEach((edge: string) => {
+      cyRef.current!.getElementById(edge).removeClass("visited");
+    })
+
+    for (const key in currentState.nodesPointers) {
+      if (currentState.nodesPointers.hasOwnProperty(key)) {
+        const labelId = `label-for-${key}`;
+        const label = nodeLabels.current[labelId];
+        if (label) {
+          if (currentState.nodesPointers[key] === null) {
+            label.innerHTML = ``;   
+          } else {
+            label.innerHTML = `${currentState.nodesPointers[key]}`;
+          }
+        }
+      }
+    }
+
+    if (!loopedMode.current && index + 1 >= animationFrames.current.length) {
+      pauseAnimation();
+      isAnimationEnded.current = true;
+    } else {
+      isAnimationEnded.current = false;
+    }
+
+    if (isAnimationPlaying.current) {
+      setTimeout(() => {
+        if (index + 1 < animationFrames.current.length) {
+          animateFindCycleFloydsAlgorithm(index + 1);
+        } else {
+          animateFindCycleFloydsAlgorithm(0);
+        }
+      }, 900 / animationSpeed.current);
+    }
+  };
+
   const playAnimation = () => {
     isAnimationPlaying.current = true;
     setIsPlaying(true);
@@ -2128,6 +2240,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findEulerianCycle": {
         animateFindEulerianPath(isAnimationEnded.current ? 0 : animationFrame.current);
+        break;
+      }
+      case "findCycleFloydsAlgorithm" : {
+        animateFindCycleFloydsAlgorithm(isAnimationEnded.current ? 0 : animationFrame.current);
         break;
       }
     }
@@ -2212,6 +2328,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findEulerianCycle": {
         stopFindEulerianPath(needDisable);
+        break;
+      }
+      case "findCycleFloydsAlgorithm": {
+        stopFindCycleFloydsAlgorithm(needDisable);
         break;
       }
     }
@@ -2361,6 +2481,17 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     }
   }
 
+  const stopFindCycleFloydsAlgorithm = (needDisable: boolean) => {
+    cyRef.current!.nodes().removeClass("color-2");
+    cyRef.current!.nodes().removeClass("color-3");
+    cyRef.current!.nodes().removeClass("color-4");
+    cyRef.current!.elements().removeClass("visited");
+    clearLabels();
+    if (!needDisable) {
+      setTooltipContent(algorithmTooltips["findCycleFloydsAlgorithm"]);
+    }
+  }
+
   const clearLabels = () => {
     Object.values(nodeLabels.current).forEach(label => {
       label.innerHTML = "";
@@ -2448,6 +2579,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         animateFindEulerianPath(animationFrame.current, true);
         break;
       }
+      case "findCycleFloydsAlgorithm": {
+        animateFindCycleFloydsAlgorithm(animationFrame.current, true);
+        break;
+      }
     }
   }
 
@@ -2533,6 +2668,10 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
       }
       case "findEulerianCycle": {
         animateFindEulerianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findCycleFloydsAlgorithm": {
+        animateFindCycleFloydsAlgorithm(animationFrame.current, true, "back");
         break;
       }
     }
@@ -2758,8 +2897,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
         {
           selector: "node.color-4",
           style: {
-            "background-color": "#df8e1d",
-            "border-color": "#df8e1d",
+            "background-color": "#2bd642",
+            "border-color": "#2bd642",
             color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#df8e1d",
           }
         },

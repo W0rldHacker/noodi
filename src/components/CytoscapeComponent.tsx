@@ -204,6 +204,18 @@ const CytoscapeComponent: React.FC = () => {
       })
     };
 
+    const isFunctionalGraph = () => {
+      if (!cyRef.current!.edges().every(edge => (edge as EdgeSingular).hasClass('oriented'))) return false;
+      const nodes = cyRef.current!.nodes();
+      for (let i = 0; i < nodes.length; i++) {
+        const outgoingEdges = nodes[i].outgoers().edges();
+        if (outgoingEdges.length > 1) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     const handleClick = (event: EventObject) => {
       if (addNodeMode && event.target === cyRef.current) {
         const nodeId = `${getMaxNodeId() + 1}`;
@@ -427,6 +439,48 @@ const CytoscapeComponent: React.FC = () => {
                     graph: graph,
                     sourceId: sourceNode,
                     sinkId: nodeId,
+                  })
+                  .then((response) => {
+                    const {
+                      frames,
+                      shortResultText,
+                      resultText,
+                      stepByStepExplanation,
+                    } = response.data;
+                    console.log(frames);
+                    console.log(stepByStepExplanation);
+                    setTimeout(() => {
+                      unselectNodes();
+                      setSourceNode("");
+                      setIsLoading(false);
+                      setTooltipContent(shortResultText);
+                      setResultText(shortResultText);
+                      setAlgorithmDetails(resultText);
+                      setStepByStepExplanation(stepByStepExplanation);
+                      startAnimation(frames);
+                    }, 1000);
+                  })
+                  .catch((error) => {
+                    setIsLoading(false);
+                    console.error("Ошибка запроса:", error);
+                  });
+              }
+              break;
+            }
+            case "findCycleFloydsAlgorithm": {
+              const isFunctional = isFunctionalGraph();
+              if (!isFunctional) {
+                setTooltipContent(
+                  "Граф не является функциональным, поэтому корректное выполнение алгоритма Флойда невозможно. Граф должен содержать только ориентированные рёбра, а также из каждой вершины должно исходить не более одного ребра"
+                );
+              } else {
+                const graph = cyRef.current!.json();
+                const startNodeId = event.target.id();
+                setIsLoading(true);
+                axios
+                  .post("/api/findCycleFloydsAlgorithm", {
+                    graph: graph,
+                    startNodeId: startNodeId,
                   })
                   .then((response) => {
                     const {
