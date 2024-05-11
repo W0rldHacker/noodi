@@ -63,12 +63,13 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
                   <button
                     className="flex gap-2 items-center justify-center"
                     onClick={() => {
+                      const reverseEdge = cyRef.current!.getElementById(`${edge!.target().id()}-${edge!.source().id()}`);
                       openEdgeConfigurator(
                         "edit",
                         cyRef.current!,
                         edge!.source().id(),
                         edge!.target().id(),
-                        undefined,
+                        reverseEdge.length > 0 ? reverseEdge : undefined,
                         edge!.data("title"),
                         edge!.data("weight"),
                         edge!.data("displayedWeight"),

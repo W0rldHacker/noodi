@@ -49,7 +49,7 @@ export const EdgeConfiguratorProvider: React.FC<
     edgeWeight: number;
     displayedEdgeWeight: string,
     isOriented: boolean;
-  }>({ mode: "create", cy: null, sourceId: null, targetId: null, reverseEdge: null, edgeTitle: "", edgeWeight: 1, displayedEdgeWeight: "", isOriented: false });
+  }>({ mode: "create", cy: null, sourceId: null, targetId: null, reverseEdge: null, edgeTitle: "", edgeWeight: 1, displayedEdgeWeight: "", isOriented: true });
 
   const openEdgeConfigurator = (
     mode: "create" | "edit" | "replace",
@@ -71,7 +71,7 @@ export const EdgeConfiguratorProvider: React.FC<
       edgeTitle: edgeTitle || "",
       edgeWeight: edgeWeight || 1,
       displayedEdgeWeight: displayedEdgeWeight || "",
-      isOriented: isOriented || false,
+      isOriented: isOriented === undefined ? true : isOriented,
     });
     const edgeConfigurator = document.getElementById("edge-configurator");
     if (edgeConfigurator instanceof HTMLDialogElement) {

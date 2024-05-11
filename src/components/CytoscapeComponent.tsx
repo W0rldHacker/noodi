@@ -10,7 +10,10 @@ import Tooltip from './Tooltip';
 import NodeContextMenu from './NodeContextMenu';
 import EdgeContextMenu from './EdgeContextMenu';
 import AnimationToolbar from './AnimationToolbar';
+import jquery from 'jquery';
+import graphml from 'cytoscape-graphml';
 cytoscape.use( popper );
+graphml( cytoscape, jquery );
 
 const CytoscapeComponent: React.FC = () => {
   const { cyRef, getThemeStyles, saveGraph, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, sourceNode, setSourceNode, algorithmMode, selectedAlgorithm, isAnimationReady, isLoading, setIsLoading, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
@@ -44,10 +47,10 @@ const CytoscapeComponent: React.FC = () => {
         }*/
       ],
       style: [],
-      layout: {
-        name: 'grid',
+      /*layout: {
+        name: 'preset',
         padding: 128,
-      },
+      },*/
       minZoom: 0.4,
       maxZoom: 6.4,
     });
@@ -266,10 +269,15 @@ const CytoscapeComponent: React.FC = () => {
             }
           }*/
           if (edge.length > 0 && edge.is("edge")) {
-            openEdgeConfigurator("edit", cyRef.current!, sourceNode, nodeId, undefined, edge.data("title"), edge.data("weight"), edge.data("displayedWeight"), edge.hasClass("oriented"));
+            openEdgeConfigurator("edit", cyRef.current!, sourceNode, nodeId, reverseEdge.length > 0 ? reverseEdge : undefined, edge.data("title"), edge.data("weight"), edge.data("displayedWeight"), edge.hasClass("oriented"));
           } else {
             if (reverseEdge.length > 0 && reverseEdge.is("edge")) {
-              openEdgeConfigurator("replace", cyRef.current!, sourceNode, nodeId, reverseEdge, reverseEdge.data("title"), reverseEdge.data("weight"), reverseEdge.data("displayedWeight"), false);
+              if (reverseEdge.hasClass("oriented")) {
+                openEdgeConfigurator("create", cyRef.current!, sourceNode, nodeId, reverseEdge);
+              } else {
+                console.log("replace");
+                openEdgeConfigurator("replace", cyRef.current!, sourceNode, nodeId, reverseEdge, reverseEdge.data("title"), reverseEdge.data("weight"), reverseEdge.data("displayedWeight"), false);
+              }
             } else {
               openEdgeConfigurator("create", cyRef.current!, sourceNode, nodeId);
             }

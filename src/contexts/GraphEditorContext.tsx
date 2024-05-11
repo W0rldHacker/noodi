@@ -734,7 +734,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const isConnected = isGraphConnected(cyRef.current!, true);
             if (!isConnected) {
               setTooltipContent(
-                "Граф не является связным, поэтому эйлеров цикл не существует"
+                "Граф не является связным, поэтому гамильтонов путь не существует"
               );
             } else {
               const graph = cyRef.current!.json();
@@ -774,7 +774,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             const isConnected = isGraphConnected(cyRef.current!, true);
             if (!isConnected) {
               setTooltipContent(
-                "Граф не является связным, поэтому эйлеров цикл не существует"
+                "Граф не является связным, поэтому гамильтонов цикл не существует"
               );
             } else {
               const graph = cyRef.current!.json();

@@ -25,7 +25,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
   const edgeWeight = useRef(1);
   const displayedEdgeWeight = useRef("");
   const [edgeWeightString, setEdgeWeightString] = useState("");
-  const [isOriented, setIsOriented] = useState(false);
+  const [isOriented, setIsOriented] = useState(true);
   const { saveGraph, saveState } = useGraphEditor();
 
   useEffect(() => {
@@ -44,19 +44,62 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
   };
 
   const createEdge = () => {
-    defaultConfig.cy!.add({
-      group: "edges",
-      data: {
-        id: `${defaultConfig.sourceId}-${defaultConfig.targetId}`,
-        source: defaultConfig.sourceId,
-        target: defaultConfig.targetId,
-        title: edgeTitle,
-        weight: edgeWeight.current,
-        displayedWeight: displayedEdgeWeight.current,
-      },
-      classes: isOriented ? "oriented" : "",
-    });
+    if (defaultConfig.reverseEdge !== null) {
+      if (edgeWeight.current === defaultConfig.reverseEdge.data("weight")) {
+        defaultConfig.reverseEdge.removeClass("oriented");
+      }
+      else {
+        defaultConfig.cy!.add({
+          group: "edges",
+          data: {
+            id: `${defaultConfig.sourceId}-${defaultConfig.targetId}`,
+            source: defaultConfig.sourceId,
+            target: defaultConfig.targetId,
+            title: edgeTitle,
+            weight: edgeWeight.current,
+            displayedWeight: displayedEdgeWeight.current,
+          },
+          classes: isOriented ? "oriented" : "",
+        });
+      }
+    } else {
+      defaultConfig.cy!.add({
+        group: "edges",
+        data: {
+          id: `${defaultConfig.sourceId}-${defaultConfig.targetId}`,
+          source: defaultConfig.sourceId,
+          target: defaultConfig.targetId,
+          title: edgeTitle,
+          weight: edgeWeight.current,
+          displayedWeight: displayedEdgeWeight.current,
+        },
+        classes: isOriented ? "oriented" : "",
+      });
+    }
   };
+
+  const removeDuplicateEdges = () => {
+    const edgePairs = new Map<string, cytoscape.EdgeSingular>();
+
+    defaultConfig.cy!.edges().forEach((edge) => {
+      const sourceId = edge.source().id();
+      const targetId = edge.target().id();
+      const weight = edge.data("weight");
+      const key =
+        sourceId < targetId
+          ? `${sourceId}-${targetId}`
+          : `${targetId}-${sourceId}`;
+
+      if (edgePairs.has(key)) {
+        const existingEdge = edgePairs.get(key);
+        if (existingEdge && existingEdge.data("weight") === weight) {
+          defaultConfig.cy!.remove(existingEdge);
+        }
+      } else {
+        edgePairs.set(key, edge);
+      }
+    });
+  }
 
   const saveEdgeWeight = () => {
     if (edgeWeightString) {
@@ -97,6 +140,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
     switch (defaultConfig.mode) {
       case "create": {
         createEdge();
+        
         break;
       }
       case "edit": {
@@ -189,7 +233,8 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
                 name="radio"
                 checked={!isOriented}
                 onChange={() => setIsOriented(false)}
-                className="radio checked:bg-base-content"
+                className="radio checked:bg-base-content disabled:opacity-60"
+                disabled={defaultConfig.reverseEdge !== null && defaultConfig.reverseEdge.hasClass("oriented")}
               />
             </label>
           </div>

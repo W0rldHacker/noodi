@@ -159,6 +159,18 @@ input[type='number'] {
   @apply bg-base-content bg-opacity-100 text-base-200 !important;
 }
 
+.button-checked {
+  @apply bg-base-content bg-opacity-70 text-base-200;
+}
+
+.button-checked:hover {
+  @apply bg-base-content bg-opacity-85;
+}
+
+.button-checked:active {
+  @apply bg-base-content bg-opacity-100 text-base-200 !important;
+}
+
 [data-typeit-id]:before {
   display: none !important;
 }

@@ -1,6 +1,6 @@
 {
   "name": "noodi",
-  "version": "Sun 0.7.6",
+  "version": "Sun 0.7.8",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
   "dependencies": {
     "axios": "^1.6.7",
     "cytoscape": "^3.28.1",
+    "cytoscape-graphml": "^1.0.6",
     "cytoscape-popper": "^2.0.0",
     "framer-motion": "^10.18.0",
     "marked": "^11.2.0",
@@ -25,6 +26,7 @@
     "@tailwindcss/typography": "^0.5.10",
     "@types/cytoscape": "^3.19.16",
     "@types/cytoscape-popper": "^2.0.4",
+    "@types/jquery": "^3.5.30",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
