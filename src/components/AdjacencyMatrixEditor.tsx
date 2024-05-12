@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Core } from "cytoscape";
 import { useGraphEditor } from "@/contexts/GraphEditorContext";
 
 interface AdjacencyMatrixEditorProps {
   cy: Core;
+  close: () => void;
 }
 
 const parseMatrix = (input: string) => {
@@ -15,7 +16,9 @@ const formatMatrix = (matrix: number[][]) => {
 };
 
 const createAdjacencyMatrix = (cy: Core) => {
-  const nodes = cy.nodes().map((node) => node.id());
+  const nodes = cy.nodes().map((node) => node.id()).sort(
+    (a, b) => Number(a) - Number(b)
+  );
   const edges = cy.edges().map((edge) => ({
     id: edge.id(),
     weight: edge.data("weight"),
@@ -50,9 +53,11 @@ const createAdjacencyMatrix = (cy: Core) => {
 
 const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
   cy,
+  close,
 }) => {
   const { matrix, nodes } = createAdjacencyMatrix(cy);
-  const [nodeIds, setNodeIds] = useState(nodes);
+  //const [nodeIds, setNodeIds] = useState(nodes);
+  const [isValidMatrix, setIsValidMatrix] = useState(true);
   const [matrixString, setMatrixString] = useState<string>(
     formatMatrix(matrix)
   );
@@ -66,16 +71,33 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
     setAdjacencyMatrix(parseMatrix(event.target.value));
   };
 
+  const validateMatrix = (matrix: number[][]): boolean => {
+    const N = matrix.length;
+    for (let i = 0; i < N; i++) {
+      if (matrix[i].length !== N) return false;
+      for (let j = 0; j < N; j++) {
+        if (typeof matrix[i][j] !== "number" || isNaN(matrix[i][j]))
+          return false;
+      }
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    const isValid = validateMatrix(adjacencyMatrix);
+    setIsValidMatrix(isValid);
+  }, [adjacencyMatrix]);
+
   const isWeighted = (matrix: number[][]) => {
     for (let i = 0; i < matrix.length; i++) {
-        for (let j = 0; j < matrix[i].length; j++) {
-            if (matrix[i][j] !== 0 && matrix[i][j] !== 1) {
-                return true;
-            }
+      for (let j = 0; j < matrix[i].length; j++) {
+        if (matrix[i][j] !== 0 && matrix[i][j] !== 1) {
+          return true;
         }
+      }
     }
     return false;
-  }
+  };
 
   const removeDuplicateEdges = () => {
     const edgePairs = new Map<string, cytoscape.EdgeSingular>();
@@ -104,10 +126,10 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
   const getNewNodeIds = (matrix: number[][]) => {
     const nodeIds: string[] = [];
     for (let i = 1; i <= matrix.length; i++) {
-        nodeIds.push(i.toString());
+      nodeIds.push(i.toString());
     }
     return nodeIds;
-  }
+  };
 
   const updateGraphFromMatrix = (
     cy: Core,
@@ -122,10 +144,11 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
     if (nodesCount !== matrix.length) {
       cy.elements().remove();
       nodeIds = getNewNodeIds(matrix);
-      nodeIds.forEach((id) => cy.add({ group: "nodes", data: { id: id, title: id.toString() } }));
+      nodeIds.forEach((id) =>
+        cy.add({ group: "nodes", data: { id: id, title: id.toString() } })
+      );
     }
 
-    // Обновление или добавление рёбер
     nodeIds.forEach((sourceId, i) => {
       nodeIds.forEach((targetId, j) => {
         const weight = matrix[i][j];
@@ -135,43 +158,63 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
           let edge = cy.getElementById(edgeId);
           let reverseEdge = cy.getElementById(reverseEdgeId);
 
-          // Проверка на симметричность для неориентированных рёбер
-        if (i != j && matrix[j][i] === weight) {
-          // Обновить или добавить неориентированное ребро
-          if (reverseEdge.length > 0) {
-            reverseEdge.data("weight", weight);
-            reverseEdge.data("displayedWeight", isWeightedGraph ? weight.toString() : "");
-            if (reverseEdge.hasClass("oriented")) {
+          if (i != j && matrix[j][i] === weight) {
+            if (reverseEdge.length > 0) {
+              reverseEdge.data("weight", weight);
+              reverseEdge.data(
+                "displayedWeight",
+                isWeightedGraph ? weight.toString() : ""
+              );
+              if (reverseEdge.hasClass("oriented")) {
                 reverseEdge.removeClass("oriented");
-            }
-          } else if (edge.length === 0) {
-            cy.add({
-              group: "edges",
-              data: { id: edgeId, source: sourceId, target: targetId, weight: weight, displayedWeight: isWeightedGraph ? weight.toString() : "" },
-            });
-          } else {
-            edge.data("weight", weight);
-            edge.data("displayedWeight", isWeightedGraph ? weight.toString() : "");
-            if (edge.hasClass("oriented")) {
+              }
+            } else if (edge.length === 0) {
+              cy.add({
+                group: "edges",
+                data: {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  weight: weight,
+                  displayedWeight: isWeightedGraph ? weight.toString() : "",
+                },
+              });
+            } else {
+              edge.data("weight", weight);
+              edge.data(
+                "displayedWeight",
+                isWeightedGraph ? weight.toString() : ""
+              );
+              if (edge.hasClass("oriented")) {
                 edge.removeClass("oriented");
+              }
             }
-          }
-        } else {
-          // Обновить или добавить ориентированное ребро
-          if (edge.length === 0) {
-            cy.add({
-              group: "edges",
-              data: { id: edgeId, source: sourceId, target: targetId, weight: weight, displayedWeight: isWeightedGraph ? weight.toString() : "" },
-            });
-            cy.getElementById(edgeId).addClass("oriented");
           } else {
-            edge.data("weight", weight);
-            edge.data("displayedWeight", isWeightedGraph ? weight.toString() : "");
-            if (!edge.hasClass("oriented")) {
+            if (edge.length === 0) {
+              cy.add({
+                group: "edges",
+                data: {
+                  id: edgeId,
+                  source: sourceId,
+                  target: targetId,
+                  weight: weight,
+                  displayedWeight: isWeightedGraph ? weight.toString() : "",
+                },
+              });
+              if (sourceId !== targetId) {
+                cy.getElementById(edgeId).addClass("oriented");
+              }
+            } else {
+              edge.data("weight", weight);
+              edge.data(
+                "displayedWeight",
+                isWeightedGraph ? weight.toString() : ""
+              );
+              if (!edge.hasClass("oriented")) {
                 edge.addClass("oriented");
+              }
             }
           }
-        }
 
           /*if (edge.length === 0 && reverseEdge.length === 0) {
             // Добавить новое ребро, если его нет
@@ -205,9 +248,19 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
     removeDuplicateEdges();
 
     if (nodesCount !== matrix.length) {
-      cy.layout({ name: "cose" }).run();
-      cy.reset();
+      let layout = cy.layout({ name: "cose" });
+      layout.run();
       cy.zoom(1.6);
+      cy.center();
+      layout.on("layoutstop", () => {
+        saveGraph();
+        close();
+      });
+    } else {
+      cy.zoom(1.6);
+      cy.center();
+      saveGraph();
+      close();
     }
 
     /*cy.edges().forEach((edge) => {
@@ -220,8 +273,6 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
             }
         }
     });*/
-
-    saveGraph();
   };
 
   return (
@@ -240,12 +291,16 @@ const AdjacencyMatrixEditor: React.FC<AdjacencyMatrixEditorProps> = ({
         onChange={handleMatrixChange}
       />
       <div className="flex w-full justify-center">
-        <button
-          className="btn btn-sm text-xs no-animation bg-base-200 hover:bg-base-300 hover:border-base-300"
-          onClick={() => updateGraphFromMatrix(cy, adjacencyMatrix, nodes)}
-        >
-          Сохранить
-        </button>
+        <div className={`tooltip before:text-xs before:bg-base-300 after:text-base-300 ${isValidMatrix ? "before:hidden after:hidden" : ""}`} data-tip={isValidMatrix ? "" : "Матрица смежности содержит некорректные данные или имеет некорректный формат"}>
+          <button
+            className="btn btn-sm text-xs no-animation bg-base-200 hover:bg-base-300 hover:border-base-300"
+            onClick={() => updateGraphFromMatrix(cy, adjacencyMatrix, nodes)}
+            disabled={!isValidMatrix}
+          >
+            Сохранить
+          </button>
+        </div>
+        {/*<p className="text-xs text-primary text-center">{isValidMatrix ? "" : "Матрица смежности содержит некорректные данные или имеет некорректный формат"}</p>*/}
       </div>
     </div>
   );

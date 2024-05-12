@@ -163,6 +163,7 @@ const CytoscapeComponent: React.FC = () => {
     updateStyles(currentTheme!);
 
     cyRef.current.zoom(1.6);
+    cyRef.current.center();
     updateGridBackground(cyRef.current.pan(), cyRef.current.zoom());
 
     const resizeCy = () => {
@@ -275,7 +276,6 @@ const CytoscapeComponent: React.FC = () => {
               if (reverseEdge.hasClass("oriented")) {
                 openEdgeConfigurator("create", cyRef.current!, sourceNode, nodeId, reverseEdge);
               } else {
-                console.log("replace");
                 openEdgeConfigurator("replace", cyRef.current!, sourceNode, nodeId, reverseEdge, reverseEdge.data("title"), reverseEdge.data("weight"), reverseEdge.data("displayedWeight"), false);
               }
             } else {

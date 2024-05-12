@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useGraphEditor } from "@/contexts/GraphEditorContext";
 import { Core, EdgeSingular } from "cytoscape";
+import { reverse } from "dns";
 
 interface EdgeConfiguratorModalProps {
   defaultConfig: {
@@ -26,6 +27,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
   const displayedEdgeWeight = useRef("");
   const [edgeWeightString, setEdgeWeightString] = useState("");
   const [isOriented, setIsOriented] = useState(true);
+  const [isLoop, setIsLoop] = useState(false);
   const { saveGraph, saveState } = useGraphEditor();
 
   useEffect(() => {
@@ -34,6 +36,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
     displayedEdgeWeight.current = defaultConfig.displayedEdgeWeight || "";
     setEdgeWeightString(defaultConfig.displayedEdgeWeight || "");
     setIsOriented(defaultConfig.isOriented);
+    setIsLoop(defaultConfig.sourceId === defaultConfig.targetId);
   }, [defaultConfig]);
 
   const handleEdgeWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,25 +47,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
   };
 
   const createEdge = () => {
-    if (defaultConfig.reverseEdge !== null) {
-      if (edgeWeight.current === defaultConfig.reverseEdge.data("weight")) {
-        defaultConfig.reverseEdge.removeClass("oriented");
-      }
-      else {
-        defaultConfig.cy!.add({
-          group: "edges",
-          data: {
-            id: `${defaultConfig.sourceId}-${defaultConfig.targetId}`,
-            source: defaultConfig.sourceId,
-            target: defaultConfig.targetId,
-            title: edgeTitle,
-            weight: edgeWeight.current,
-            displayedWeight: displayedEdgeWeight.current,
-          },
-          classes: isOriented ? "oriented" : "",
-        });
-      }
-    } else {
+    const addEdge = () => {
       defaultConfig.cy!.add({
         group: "edges",
         data: {
@@ -75,6 +60,20 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
         },
         classes: isOriented ? "oriented" : "",
       });
+    };
+
+    if (defaultConfig.reverseEdge !== null) {
+      if (edgeWeight.current === defaultConfig.reverseEdge.data("weight")) {
+        defaultConfig.reverseEdge.removeClass("oriented");
+        if (defaultConfig.mode === "replace") {
+          addEdge();
+        }
+      }
+      else {
+        addEdge();
+      }
+    } else {
+      addEdge();
     }
   };
 
@@ -140,7 +139,6 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
     switch (defaultConfig.mode) {
       case "create": {
         createEdge();
-        
         break;
       }
       case "edit": {
@@ -154,6 +152,19 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
         defaultConfig
           .cy!.elements(`#${defaultConfig.sourceId}-${defaultConfig.targetId}`)
           .classes(isOriented ? "oriented" : "");
+        if (
+          defaultConfig.reverseEdge !== null &&
+          edgeWeight.current === defaultConfig.reverseEdge.data("weight")
+        ) {
+          if (defaultConfig.sourceId !== defaultConfig.targetId) {
+            defaultConfig.reverseEdge.remove();
+            defaultConfig
+              .cy!.elements(
+                `#${defaultConfig.sourceId}-${defaultConfig.targetId}`
+              )
+              .removeClass("oriented");
+          }
+        }
         break;
       }
       case "replace": {
@@ -234,7 +245,7 @@ const EdgeConfiguratorModal: React.FC<EdgeConfiguratorModalProps> = ({
                 checked={!isOriented}
                 onChange={() => setIsOriented(false)}
                 className="radio checked:bg-base-content disabled:opacity-60"
-                disabled={defaultConfig.reverseEdge !== null && defaultConfig.reverseEdge.hasClass("oriented")}
+                disabled={defaultConfig.reverseEdge !== null && defaultConfig.reverseEdge.hasClass("oriented") && !isLoop}
               />
             </label>
           </div>

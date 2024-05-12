@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Core } from "cytoscape";
 import ImportOrExport from "./ImportOrExport";
 import AdjacencyMatrixEditor from "./AdjacencyMatrixEditor";
+import IncidenceMatrixEditor from "./IncidenceMatrixEditor";
 
 interface GraphSettingsModalProps {
   cy: Core;
@@ -15,10 +16,13 @@ const GraphSettingsModal: React.FC<GraphSettingsModalProps> = ({ cy }) => {
   const getSelectedTab = () => {
     switch (selectedOption) {
       case "import/export": {
-        return <ImportOrExport cy={cy}></ImportOrExport>;
+        return <ImportOrExport cy={cy} close={closeGraphSettings}></ImportOrExport>;
       }
       case "adjacencyMatrix": {
-        return <AdjacencyMatrixEditor cy={cy}></AdjacencyMatrixEditor>;
+        return <AdjacencyMatrixEditor cy={cy} close={closeGraphSettings}></AdjacencyMatrixEditor>;
+      }
+      case "incidenceMatrix": {
+        return <IncidenceMatrixEditor cy={cy} close={closeGraphSettings}></IncidenceMatrixEditor>;
       }
     }
   };

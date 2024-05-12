@@ -9,6 +9,7 @@ import { useGraphEditor } from "@/contexts/GraphEditorContext";
 
 interface ImportOrExportProps {
   cy: Core;
+  close: () => void;
 }
 
 interface GraphDefinition {
@@ -18,7 +19,7 @@ interface GraphDefinition {
   pan?: Position;
 }
 
-const ImportOrExport: React.FC<ImportOrExportProps> = ({ cy }) => {
+const ImportOrExport: React.FC<ImportOrExportProps> = ({ cy, close }) => {
   const { saveGraph, saveState } = useGraphEditor();
   const [exportFormat, setExportFormat] = useState<".graph" | ".graphml">(
     ".graph"
@@ -205,6 +206,7 @@ const ImportOrExport: React.FC<ImportOrExportProps> = ({ cy }) => {
                   cy.elements().remove();
                   cy.add(elements);
                   saveGraph();
+                  close();
                 },
                 () => {
                   e.target.value = "";
