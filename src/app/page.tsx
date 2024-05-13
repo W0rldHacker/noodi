@@ -109,11 +109,11 @@ export default function Home() {
                   <FaGithub size={20}></FaGithub>
                 </a>
               </li>
-              <li>
+              {/*<li>
                 <a className="menu-btn tooltip before:bg-transparent before:text-xs before:-mb-2.5 before:duration-0 after:hidden" data-tip="Помощь">
                   <FaRegCircleQuestion size={20}></FaRegCircleQuestion>
                 </a>
-              </li>
+              </li>*/}
             </ul>
           </li>
           <li className="text-xs">
