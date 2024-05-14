@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Core } from "cytoscape";
 import ImportOrExport from "./ImportOrExport";
 import AdjacencyMatrixEditor from "./AdjacencyMatrixEditor";
 import IncidenceMatrixEditor from "./IncidenceMatrixEditor";
+import { useGraphEditor } from "@/contexts/GraphEditorContext";
 
 interface GraphSettingsModalProps {
   cy: Core;
@@ -12,6 +13,7 @@ const GraphSettingsModal: React.FC<GraphSettingsModalProps> = ({ cy }) => {
   const [selectedOption, setSelectedOption] = useState<
     "import/export" | "adjacencyMatrix" | "incidenceMatrix"
   >("import/export");
+  const { isSettingsOpened, setIsSettingsOpened } = useGraphEditor();
 
   const getSelectedTab = () => {
     switch (selectedOption) {
@@ -27,13 +29,31 @@ const GraphSettingsModal: React.FC<GraphSettingsModalProps> = ({ cy }) => {
     }
   };
 
-  const closeGraphSettings = () => {
+  const closeGraphSettings = useCallback(() => {
     const graphSettings = document.getElementById("graph-settings");
     if (graphSettings instanceof HTMLDialogElement) {
       graphSettings.close();
+      setIsSettingsOpened(false);
       setSelectedOption("import/export");
     }
-  };
+  }, [setIsSettingsOpened]);
+
+  useEffect(() => {
+    const handleHotkey = (event: KeyboardEvent) => {
+      if (isSettingsOpened) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeGraphSettings();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleHotkey);
+
+    return () => {
+      window.removeEventListener("keydown", handleHotkey);
+    };
+  }, [isSettingsOpened, closeGraphSettings]);
 
   return (
     <dialog id="graph-settings" className="modal">

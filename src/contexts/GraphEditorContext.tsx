@@ -71,6 +71,8 @@ interface GraphEditorContextProps {
   isJustStartAlgorithm: boolean;
   isLoading: boolean;
   setIsLoading: (value: boolean) => void;
+  isSettingsOpened: boolean;
+  setIsSettingsOpened: (value: boolean) => void;
   startAlgorithm: () => void;
   toggleLoopedMode: () => void;
   increaseMultiplier: () => void;
@@ -81,6 +83,8 @@ interface GraphEditorContextProps {
   stopAnimation: (needDisable: boolean) => void;
   stepForward: () => void;
   stepBack: () => void;
+  goToFirstFrame: () => void;
+  goToLastFrame: () => void;
   setResultText: (content: string) => void;
   setStepByStepExplanation: (content: string[]) => void;
 }
@@ -129,6 +133,7 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
   const [sourceNode, setSourceNode] = useState("");
   const [isJustStartAlgorithm, setIsJustStartAlgorithm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSettingsOpened, setIsSettingsOpened] = useState(false);
   //const [animationFrames, setAnimationFrames] = useState<State[]>([]);
   const cyRef = useRef<Core | null>(null);
   const undoStack = useRef<CyState[]>([]);
@@ -2498,6 +2503,102 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     });
   }
 
+  const goToFirstFrame = () => {
+    pauseAnimation();
+    if (!manualSwitch) {
+      setManualSwitch(true);
+    }
+    animationFrame.current = 0;
+    if (animationFrame.current + 1 >= animationFrames.current.length) {
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText.current ? "  \n" + resultText.current : ""}`)
+    } else {
+      setTooltipContent(stepByStepExplanation[animationFrame.current]);
+    }
+    cyRef.current!.elements().removeClass("visited");
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.elements().removeClass("processed");
+    cyRef.current!.elements().removeClass("color-1");
+    cyRef.current!.elements().removeClass("color-2");
+    cyRef.current!.elements().removeClass("color-3");
+    cyRef.current!.elements().removeClass("color-4");
+    cyRef.current!.elements().removeClass("color-5");
+    //setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${animationFrame.current + 1 >= animationFrames.current.length ? "\n\n" + resultText : ""}`);
+    switch (selectedAlgorithm.current) {
+      case "bfs": {
+        animateBFS(animationFrame.current, true);
+        break;
+      }
+      case "dfs": {
+        animateDFS(animationFrame.current, true);
+        break;
+      }
+      case "dijkstra": {
+        animateDijkstra(animationFrame.current, true);
+        break;
+      }
+      case "bellmanFord": {
+        animateBellmanFord(animationFrame.current, true);
+        break;
+      }
+      case "prim": {
+        animatePrim(animationFrame.current, true);
+        break;
+      }
+      case "kruskal": {
+        animateKruskal(animationFrame.current, true);
+        break;
+      }
+      case "tarjan": {
+        animateTarjan(animationFrame.current, true);
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true);
+        break;
+      }
+      case "graphColoring": {
+        animateGraphColoring(animationFrame.current, true);
+        break;
+      }
+      case "edmondsKarp": {
+        animateEdmondsKarp(animationFrame.current, true);
+        break;
+      }
+      case "calculateDegrees": {
+        animateCalculateDegrees(animationFrame.current, true);
+        break;
+      }
+      case "findGraphProperties": {
+        animateFindGraphProperties(animationFrame.current, true);
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        animateFindWeaklyConnectedComponents(animationFrame.current, true);
+        break;
+      }
+      case "findHamiltonianPath": {
+        animateFindHamiltonianPath(animationFrame.current, true);
+        break;
+      }
+      case "findHamiltonianCycle": {
+        animateFindHamiltonianPath(animationFrame.current, true);
+        break;
+      }
+      case "findEulerianPath": {
+        animateFindEulerianPath(animationFrame.current, true);
+        break;
+      }
+      case "findEulerianCycle": {
+        animateFindEulerianPath(animationFrame.current, true);
+        break;
+      }
+      case "findCycleFloydsAlgorithm": {
+        animateFindCycleFloydsAlgorithm(animationFrame.current, true);
+        break;
+      }
+    }
+  }
+
   const stepForward = () => {
     pauseAnimation();
     if (!manualSwitch) {
@@ -2597,6 +2698,106 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     } else {
       setTooltipContent(stepByStepExplanation[animationFrame.current]);
     }
+    switch (selectedAlgorithm.current) {
+      case "bfs": {
+        animateBFS(animationFrame.current, true, "back");
+        break;
+      }
+      case "dfs": {
+        animateDFS(animationFrame.current, true, "back");
+        break;
+      }
+      case "dijkstra": {
+        animateDijkstra(animationFrame.current, true, "back");
+        break;
+      }
+      case "bellmanFord": {
+        animateBellmanFord(animationFrame.current, true, "back");
+        break;
+      }
+      case "prim": {
+        animatePrim(animationFrame.current, true, "back");
+        break;
+      }
+      case "kruskal": {
+        animateKruskal(animationFrame.current, true, "back");
+        break;
+      }
+      case "tarjan": {
+        animateTarjan(animationFrame.current, true, "back");
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true, "back");
+        break;
+      }
+      case "topologicalSort": {
+        animateTopologicalSort(animationFrame.current, true, "back");
+        break;
+      }
+      case "graphColoring": {
+        animateGraphColoring(animationFrame.current, true, "back");
+        break;
+      }
+      case "edmondsKarp": {
+        animateEdmondsKarp(animationFrame.current, true, "back");
+        break;
+      }
+      case "calculateDegrees": {
+        animateCalculateDegrees(animationFrame.current, true, "back");
+        break;
+      }
+      case "findGraphProperties": {
+        animateFindGraphProperties(animationFrame.current, true, "back");
+        break;
+      }
+      case "findWeaklyConnectedComponents": {
+        animateFindWeaklyConnectedComponents(animationFrame.current, true, "back");
+        break;
+      }
+      case "findHamiltonianPath": {
+        animateFindHamiltonianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findHamiltonianCycle": {
+        animateFindHamiltonianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findEulerianPath": {
+        animateFindEulerianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findEulerianCycle": {
+        animateFindEulerianPath(animationFrame.current, true, "back");
+        break;
+      }
+      case "findCycleFloydsAlgorithm": {
+        animateFindCycleFloydsAlgorithm(animationFrame.current, true, "back");
+        break;
+      }
+    }
+    //animationFrame.current = animationFrame.current === 0 ? animationFrames.current.length - 1 : animationFrame.current - 1;
+  }
+
+  const goToLastFrame = () => {
+    pauseAnimation();
+    if (!manualSwitch) {
+      setManualSwitch(true);
+    }
+    animationFrame.current = animationFrames.current.length - 1;
+    if (animationFrame.current + 1 >= animationFrames.current.length) {
+      setTooltipContent(`${stepByStepExplanation[animationFrame.current]}${stepByStepExplanation[animationFrame.current] !== resultText.current ? "  \n" + resultText.current : ""}`)
+    } else {
+      setTooltipContent(stepByStepExplanation[animationFrame.current]);
+    }
+    cyRef.current!.elements().removeClass("visited");
+    cyRef.current!.elements().removeClass("processing");
+    cyRef.current!.elements().removeClass("processed");
+    cyRef.current!.elements().removeClass("color-1");
+    cyRef.current!.elements().removeClass("color-2");
+    cyRef.current!.elements().removeClass("color-3");
+    cyRef.current!.elements().removeClass("color-4");
+    cyRef.current!.elements().removeClass("color-5");
     switch (selectedAlgorithm.current) {
       case "bfs": {
         animateBFS(animationFrame.current, true, "back");
@@ -3091,6 +3292,22 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
             color: (node: NodeSingular) => node.data('title').length <= 3 ? "#eff1f5" : "#babbf1",
           }
         },
+        {
+          selector: "edge.flow-display",
+          style: {
+            label: (edge: EdgeSingular) => {
+              const title = edge.data("title");
+              const weight = edge.data("weight");
+              const flow = edge.data("flow");
+
+              if (title) {
+                return `${title} ${`(${flow}/${weight})`}`;
+              } else {
+                return `${flow}/${weight}`;
+              }
+            },
+          }
+        },
       ];
     }
   }, []);
@@ -3133,6 +3350,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     isJustStartAlgorithm,
     isLoading,
     setIsLoading,
+    isSettingsOpened,
+    setIsSettingsOpened,
     startAlgorithm,
     toggleLoopedMode,
     increaseMultiplier,
@@ -3143,6 +3362,8 @@ export const GraphEditorProvider: React.FC<GraphEditorProviderProps> = ({
     stopAnimation,
     stepForward,
     stepBack,
+    goToFirstFrame,
+    goToLastFrame,
     setStepByStepExplanation,
     setResultText,
   };

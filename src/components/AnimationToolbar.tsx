@@ -6,6 +6,8 @@ import {
   FaStop,
   FaBackward,
   FaForward,
+  FaBackwardStep,
+  FaForwardStep,
   FaRepeat,
   FaBorderAll,
   FaAngleLeft,
@@ -31,6 +33,8 @@ const AnimationToolbar: React.FC = () => {
     stopAnimation,
     stepForward,
     stepBack,
+    goToFirstFrame,
+    goToLastFrame,
   } = useGraphEditor();
   const [currentSpeed, setCurrentSpeed] = useState(animationSpeed.current);
   //const [isPlaying, setIsPlaying] = useState(isAnimationPlaying.current);
@@ -94,6 +98,12 @@ const AnimationToolbar: React.FC = () => {
       } else if (algorithmMode && event.ctrlKey && (event.key === "r" || event.key === "к")) {
         event.preventDefault();
         toggleLooped();
+      } else if (algorithmMode && event.shiftKey && event.key === "ArrowLeft") {
+        event.preventDefault();
+        goToFirstFrame();
+      } else if (algorithmMode && event.shiftKey && event.key === "ArrowRight") {
+        event.preventDefault();
+        goToLastFrame();
       } else if (isAnimationReady && event.key === "ArrowLeft") {
         event.preventDefault();
         stepBack();
@@ -114,7 +124,7 @@ const AnimationToolbar: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleHotkey);
     };
-  }, [toggleGrid, isPlaying, isAnimationReady, playAnimation, pauseAnimation, stopAnimation, stepForward, stepBack, algorithmMode, speedUp, slowDown, toggleLooped]);
+  }, [toggleGrid, isPlaying, isAnimationReady, playAnimation, pauseAnimation, stopAnimation, stepForward, stepBack, goToFirstFrame, goToLastFrame, algorithmMode, speedUp, slowDown, toggleLooped]);
 
   const handleLeftClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -146,6 +156,54 @@ const AnimationToolbar: React.FC = () => {
             <li>
               <a
                 className={`tooltip h-9 w-9 flex items-center justify-center duration-0 before:bg-transparent before:text-xs before:mb-2 after:hidden`}
+                data-tip="Стоп (Ctrl + S)"
+              >
+                <button
+                  className={`p-2 rounded-lg transition-all duration-150 ${
+                    isAnimationReady ? "" : "button-disabled"
+                  }`}
+                  onClick={() => stopAnimation(false)}
+                >
+                  <FaStop size={22} />
+                </button>
+              </a>
+            </li>
+            <div className="noodi-divider" />
+            <li>
+              <a
+                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 icon-md before:bg-transparent before:text-xs before:mb-2 after:hidden`}
+                data-tip="В начало (Shift + 🠔)"
+              >
+                <button
+                  className={`p-2 rounded-lg transition-all duration-150 ${
+                    isAnimationReady ? "" : "button-disabled"
+                  }`}
+                  onClick={goToFirstFrame}
+                >
+                  <FaBackward size={20} />
+                </button>
+              </a>
+            </li>
+            <div className="noodi-divider" />
+            <li>
+              <a
+                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 icon-md before:bg-transparent before:text-xs before:mb-2 after:hidden`}
+                data-tip="Назад на 1 шаг (🠔)"
+              >
+                <button
+                  className={`p-2 rounded-lg transition-all duration-150 ${
+                    isAnimationReady ? "" : "button-disabled"
+                  }`}
+                  onClick={stepBack}
+                >
+                  <FaBackwardStep size={20} />
+                </button>
+              </a>
+            </li>
+            <div className="noodi-divider" />
+            <li>
+              <a
+                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 before:bg-transparent before:text-xs before:mb-2 after:hidden`}
                 data-tip={`${isPlaying ? "Пауза" : "Воспроизвести"} (Ctrl + P)`}
               >
                 {isPlaying ? (
@@ -173,38 +231,6 @@ const AnimationToolbar: React.FC = () => {
             <li>
               <a
                 className={`tooltip h-9 w-9 flex items-center justify-center duration-0 before:bg-transparent before:text-xs before:mb-2 after:hidden`}
-                data-tip="Стоп (Ctrl + S)"
-              >
-                <button
-                  className={`p-2 rounded-lg transition-all duration-150 ${
-                    isAnimationReady ? "" : "button-disabled"
-                  }`}
-                  onClick={() => stopAnimation(false)}
-                >
-                  <FaStop size={22} />
-                </button>
-              </a>
-            </li>
-            <div className="noodi-divider" />
-            <li>
-              <a
-                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 icon-md before:bg-transparent before:text-xs before:mb-2 after:hidden`}
-                data-tip="Назад на 1 шаг (🠔)"
-              >
-                <button
-                  className={`p-2 rounded-lg transition-all duration-150 ${
-                    isAnimationReady ? "" : "button-disabled"
-                  }`}
-                  onClick={stepBack}
-                >
-                  <FaBackward size={20} />
-                </button>
-              </a>
-            </li>
-            <div className="noodi-divider" />
-            <li>
-              <a
-                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 before:bg-transparent before:text-xs before:mb-2 after:hidden`}
                 data-tip="Вперёд на 1 шаг (🠖)"
               >
                 <button
@@ -212,6 +238,22 @@ const AnimationToolbar: React.FC = () => {
                     isAnimationReady ? "" : "button-disabled"
                   }`}
                   onClick={stepForward}
+                >
+                  <FaForwardStep size={20} />
+                </button>
+              </a>
+            </li>
+            <div className="noodi-divider" />
+            <li>
+              <a
+                className={`tooltip h-9 w-9 flex items-center justify-center duration-0 icon-md before:bg-transparent before:text-xs before:mb-2 after:hidden`}
+                data-tip="В конец (Shift + 🠖)"
+              >
+                <button
+                  className={`p-2 rounded-lg transition-all duration-150 ${
+                    isAnimationReady ? "" : "button-disabled"
+                  }`}
+                  onClick={goToLastFrame}
                 >
                   <FaForward size={20} />
                 </button>

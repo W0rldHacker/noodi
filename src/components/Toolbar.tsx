@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCirclePlus,
@@ -31,68 +31,81 @@ const Toolbar: React.FC = () => {
     undo,
     redo,
     algorithmMode,
+    isSettingsOpened,
+    setIsSettingsOpened,
   } = useGraphEditor();
+
+  const openGraphSettings = useCallback(() => {
+    const graphSettings = document.getElementById("graph-settings");
+    if (graphSettings instanceof HTMLDialogElement) {
+      setIsSettingsOpened(true);
+      graphSettings.showModal();
+    }
+    close();
+  }, [setIsSettingsOpened]);
 
   useEffect(() => {
     const handleHotkey = (event: KeyboardEvent) => {
-      if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        event.altKey &&
-        (event.key === "d" || event.key === "в")
-      ) {
-        event.preventDefault();
-        clearGraph();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        event.altKey &&
-        (event.key === "c" || event.key === "с")
-      ) {
-        event.preventDefault();
-        openGraphSettings();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "g" || event.key === "п")
-      ) {
-        event.preventDefault();
-        toggleGrid();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "v" || event.key === "м")
-      ) {
-        event.preventDefault();
-        toggleAddNodeMode();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "e" || event.key === "у")
-      ) {
-        event.preventDefault();
-        toggleAddEdgeMode();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "d" || event.key === "в")
-      ) {
-        event.preventDefault();
-        toggleDeleteMode();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "z" || event.key === "я")
-      ) {
-        event.preventDefault();
-        undo();
-      } else if (
-        !algorithmMode &&
-        event.ctrlKey &&
-        (event.key === "y" || event.key === "н")
-      ) {
-        event.preventDefault();
-        redo();
+      if (!isSettingsOpened) {
+        if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          event.altKey &&
+          (event.key === "d" || event.key === "в")
+        ) {
+          event.preventDefault();
+          clearGraph();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          event.altKey &&
+          (event.key === "c" || event.key === "с")
+        ) {
+          event.preventDefault();
+          openGraphSettings();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "g" || event.key === "п")
+        ) {
+          event.preventDefault();
+          toggleGrid();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "v" || event.key === "м")
+        ) {
+          event.preventDefault();
+          toggleAddNodeMode();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "e" || event.key === "у")
+        ) {
+          event.preventDefault();
+          toggleAddEdgeMode();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "d" || event.key === "в")
+        ) {
+          event.preventDefault();
+          toggleDeleteMode();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "z" || event.key === "я")
+        ) {
+          event.preventDefault();
+          undo();
+        } else if (
+          !algorithmMode &&
+          event.ctrlKey &&
+          (event.key === "y" || event.key === "н")
+        ) {
+          event.preventDefault();
+          redo();
+        }
       }
     };
 
@@ -110,15 +123,9 @@ const Toolbar: React.FC = () => {
     redo,
     clearGraph,
     algorithmMode,
+    openGraphSettings,
+    isSettingsOpened,
   ]);
-
-  const openGraphSettings = () => {
-    const graphSettings = document.getElementById("graph-settings");
-    if (graphSettings instanceof HTMLDialogElement) {
-      graphSettings.showModal();
-    }
-    close();
-  };
 
   /*const closeGraphSettings = () => {
     const graphSettings = document.getElementById("graph-settings");

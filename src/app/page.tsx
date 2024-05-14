@@ -164,13 +164,6 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a className={`block p-0 ${selectedAlgorithm.current === "findWeaklyConnectedComponents" ? "algorithm-button-checked" : ""}`}>
-                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findWeaklyConnectedComponents")}>
-                      Нахождение компонент слабой связности
-                    </button>
-                  </a>
-                </li>
-                <li>
                   <a className={`block p-0 ${selectedAlgorithm.current === "findHamiltonianPath" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findHamiltonianPath")}>
                       Поиск гамильтонова пути
@@ -195,6 +188,25 @@ export default function Home() {
                   <a className={`block p-0 ${selectedAlgorithm.current === "findEulerianCycle" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findEulerianCycle")}>
                       Поиск эйлерова цикла
+                    </button>
+                  </a>
+                </li>
+              </ul>
+            </details>
+            <details open>
+              <summary>Нахождение компонент связности</summary>
+              <ul className="flex flex-col gap-y-0.5 mt-0.5">
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "findWeaklyConnectedComponents" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("findWeaklyConnectedComponents")}>
+                      Нахождение компонент слабой связности
+                    </button>
+                  </a>
+                </li>
+                <li>
+                  <a className={`block p-0 ${selectedAlgorithm.current === "tarjan" ? "algorithm-button-checked" : ""}`}>
+                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("tarjan")}>
+                      Алгоритм Тарьяна
                     </button>
                   </a>
                 </li>
@@ -229,13 +241,6 @@ export default function Home() {
             <details open>
               <summary>Специализированные алгоритмы</summary>
               <ul className="flex flex-col gap-y-0.5 mt-0.5">
-                <li>
-                  <a className={`block p-0 ${selectedAlgorithm.current === "tarjan" ? "algorithm-button-checked" : ""}`}>
-                    <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("tarjan")}>
-                      Алгоритм Тарьяна
-                    </button>
-                  </a>
-                </li>
                 <li>
                   <a className={`block p-0 ${selectedAlgorithm.current === "graphColoring" ? "algorithm-button-checked" : ""}`}>
                     <button className={`px-4 py-2 w-full h-full text-left rounded-md `} onClick={() => enableAlgorithmMode("graphColoring")}>

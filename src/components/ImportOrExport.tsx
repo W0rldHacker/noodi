@@ -100,10 +100,11 @@ const ImportOrExport: React.FC<ImportOrExportProps> = ({ cy, close }) => {
               node.data(data);
             });
 
-            saveGraph();
-            cy.reset();
             cy.zoom(1.6);
+            cy.center();
+            saveGraph();
             clearInput();
+            close();
           }
         } catch (error) {
           alert(
