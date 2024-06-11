@@ -17,7 +17,9 @@ export async function POST(req: Request) {
     let frames: any[] = [];
     const startNodeTitle: string = cy.getElementById(startNodeId).data("title");
     const endNodeTitle: string = cy.getElementById(endNodeId).data("title");
-    let stepByStepExplanation: string[] = [`Начинаем с вершины "${startNodeTitle}", устанавливаем расстояние до неё равным 0`];
+    let stepByStepExplanation: string[] = [
+      `Начинаем с вершины "${startNodeTitle}", устанавливаем расстояние до неё равным 0`,
+    ];
 
     cy.nodes().forEach((node) => {
       let nodeId = node.id();
@@ -42,9 +44,7 @@ export async function POST(req: Request) {
         paths: Object.keys(distances).reduce(
           (acc: { [key: string]: string }, key) => {
             acc[key] =
-              distances[key] === Infinity
-                ? "∞"
-                : distances[key].toString();
+              distances[key] === Infinity ? "∞" : distances[key].toString();
             return acc;
           },
           {}
@@ -54,7 +54,11 @@ export async function POST(req: Request) {
         pathEdges: [],
       });
       if (nodeId !== startNodeId) {
-        stepByStepExplanation.push(`Рассматриваем необработанную вершину "${nodeTitle}" с минимальным расстоянием ${distance === Infinity ? "∞" : distance}`);
+        stepByStepExplanation.push(
+          `Рассматриваем необработанную вершину "${nodeTitle}" с минимальным расстоянием ${
+            distance === Infinity ? "∞" : distance
+          }`
+        );
       }
 
       cy.getElementById(nodeId)
@@ -63,8 +67,7 @@ export async function POST(req: Request) {
           let isDirected = edge.hasClass("oriented");
           let sourceId = edge.source().id();
           let targetId = edge.target().id();
-          let nextNodeId =
-            sourceId === nodeId ? targetId : sourceId;  
+          let nextNodeId = sourceId === nodeId ? targetId : sourceId;
           const nextNodeTitle = cy.getElementById(nextNodeId).data("title");
           let edgeTitle = edge.data("title");
           if (!edgeTitle && edge.id()) {
@@ -75,9 +78,9 @@ export async function POST(req: Request) {
             let weight = edge.data("weight");
             let alt = distance + weight;
 
-            let pathComparsion = `${distances[nodeId] === Infinity ? "∞" : distances[nodeId]} + ${weight} ${
-              alt < distances[nextNodeId] ? "<" : ">"
-            } ${
+            let pathComparsion = `${
+              distances[nodeId] === Infinity ? "∞" : distances[nodeId]
+            } + ${weight} ${alt < distances[nextNodeId] ? "<" : ">"} ${
               distances[nextNodeId] === Infinity ? "∞" : distances[nextNodeId]
             }`;
 
@@ -100,7 +103,13 @@ export async function POST(req: Request) {
               pathNodes: [],
               pathEdges: [],
             });
-            stepByStepExplanation.push(`Рассматриваем ребро "${edgeTitle}" ведущее к вершине "${nextNodeTitle}". Текущее расстояние: ${distances[targetId] === Infinity ? "∞" : distances[targetId]}, новое расстояние: ${alt === Infinity ? "∞" : alt} (${pathComparsion})`);
+            stepByStepExplanation.push(
+              `Рассматриваем ребро "${edgeTitle}" ведущее к вершине "${nextNodeTitle}". Текущее расстояние: ${
+                distances[targetId] === Infinity ? "∞" : distances[targetId]
+              }, новое расстояние: ${
+                alt === Infinity ? "∞" : alt
+              } (${pathComparsion})`
+            );
 
             if (alt < distances[nextNodeId]) {
               frames.push({
@@ -125,11 +134,9 @@ export async function POST(req: Request) {
               distances[nextNodeId] = alt;
               prev[nextNodeId] = nodeId;
               pq.enqueue(nextNodeId, alt);
-              stepByStepExplanation.push(`Так как ${pathComparsion}, обновляем расстояние до вершины "${targetId}" до ${alt}.`)
-
-              /*stepByStepExplanation.push(
-                `Обновляем расстояние до вершины **${nextNodeId}** до **${alt}**.`
-              );*/
+              stepByStepExplanation.push(
+                `Так как ${pathComparsion}, обновляем расстояние до вершины "${targetId}" до ${alt}.`
+              );
             }
           }
         });
@@ -151,19 +158,23 @@ export async function POST(req: Request) {
     edges.reverse();
 
     let pathToEnd = reconstructPath(prev, endNodeId);
-    let pathTitles = pathToEnd.map((nodeId) => `"${cy.getElementById(nodeId).data("title")}"`);
-    let pathString = pathToEnd.includes(startNodeId) ? pathTitles.join(" 🠖 ") : "не существует";
-    let nodes = cy.nodes();
-    let sortedNodes = nodes.sort((a, b) =>
-      Number(a.id()) - Number(b.id())
+    let pathTitles = pathToEnd.map(
+      (nodeId) => `"${cy.getElementById(nodeId).data("title")}"`
     );
+    let pathString = pathToEnd.includes(startNodeId)
+      ? pathTitles.join(" 🠖 ")
+      : "не существует";
+    let nodes = cy.nodes();
+    let sortedNodes = nodes.sort((a, b) => Number(a.id()) - Number(b.id()));
     let allShortPaths = "";
     sortedNodes.forEach((node) => {
       let nodeId = node.id();
       let nodeTitle = node.data("title");
       if (distances[nodeId] !== Infinity) {
         let path = reconstructPath(prev, nodeId);
-        let pathTitles = path.map((nodeId) => `"${cy.getElementById(nodeId).data("title")}"`);
+        let pathTitles = path.map(
+          (nodeId) => `"${cy.getElementById(nodeId).data("title")}"`
+        );
         allShortPaths += `  - **Вершина "${nodeTitle}": Расстояние -** ${
           distances[nodeId]
         }, **Путь -** ${pathTitles.join(" 🠖 ")}\n`;
@@ -179,7 +190,9 @@ export async function POST(req: Request) {
     const visitedEdgesCount = edges.length;
 
     const shortResultText = `Кратчайший путь от вершины "${startNodeTitle}" до вершины "${endNodeTitle}": ${pathString}  
-    Длина пути: ${distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]}`;
+    Длина пути: ${
+      distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]
+    }`;
     stepByStepExplanation.push(shortResultText);
     frames.push({
       fullyProcessedNodes: [],
@@ -205,7 +218,9 @@ export async function POST(req: Request) {
 **Конечная вершина:** "${endNodeTitle}"
 
 **Кратчайший путь до конечной вершины:** ${pathString}  
-**Длина кратчайшего пути:** ${distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]}  
+**Длина кратчайшего пути:** ${
+      distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]
+    }  
 
 **Пошаговое описание алгоритма:**
 
@@ -240,24 +255,6 @@ ${allShortPaths}
       path.reverse();
       return path;
     }
-
-    /*function findPathEdges(cy: Core, path: string[]) {
-      let edges = [];
-      for (let i = 0; i < path.length - 1; i++) {
-        let edge = cy.edges().filter((edge) => {
-          let source = edge.data("source");
-          let target = edge.data("target");
-          return (
-            (source === path[i] && target === path[i + 1]) ||
-            (source === path[i + 1] && target === path[i])
-          );
-        });
-        if (edge.length > 0) {
-          edges.push(edge.id());
-        }
-      }
-      return edges;
-    }*/
 
     return { frames, shortResultText, resultText, stepByStepExplanation };
   }

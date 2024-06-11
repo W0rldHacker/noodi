@@ -65,33 +65,6 @@ export async function POST(req: Request) {
         return path;
       }
 
-      /*cy.edges().forEach((edge) => {
-        let edgeSource = edge.data("source");
-        let edgeTarget = edge.data("target");
-        let isOriented = edge.hasClass("oriented");
-        let capacity = edge.data("weight");
-
-        if (
-          edgeSource === currentNodeId &&
-          !visited.has(edgeTarget) &&
-          capacity > 0
-        ) {
-          parent[edgeTarget] = currentNodeId!;
-          visited.add(edgeTarget);
-          queue.push(edgeTarget);
-        }
-        if (
-          !isOriented &&
-          edgeTarget === currentNodeId &&
-          !visited.has(edgeSource) &&
-          capacity > 0
-        ) {
-          parent[edgeSource] = currentNodeId;
-          visited.add(edgeSource);
-          queue.push(edgeSource);
-        }
-      });*/
-
       let neighbors = sortedEdges.filter(
         (edge) =>
           edge.data("source") === currentNodeId &&
@@ -122,10 +95,8 @@ export async function POST(req: Request) {
     let currentFlows: { [key: string]: number } = {};
     const flowPathsEdges: Set<string> = new Set();
     let flowPathsNodes: Set<string> = new Set();
-    //let residualCapacities: { [key: string]: number } = {};
     cy.edges().forEach((edge) => {
       currentFlows[edge.id()] = 0;
-      //residualCapacities[edge.id()] = edge.data("weight");
     });
     const stepByStepExplanation = [];
     frames.push({
@@ -134,7 +105,6 @@ export async function POST(req: Request) {
       currentPathNodes: [],
       currentPathEdges: [],
       flows: { ...currentFlows },
-      //residualCapacities: { ...residualCapacities },
     });
     const sourceNodeTitle = cy.getElementById(sourceId).data("title");
     const sinkNodeTitle = cy.getElementById(sinkId).data("title");
@@ -157,7 +127,6 @@ export async function POST(req: Request) {
       let minCapacity = Infinity;
       for (let i = 0; i < path.length - 1; i++) {
         pathNodes.add(path[i]);
-        //let edge = cy.edges().filter(`[id="${path[i]}-${path[i+1]}"]`).first();
         let edge = newCy
           .edges()
           .filter(
@@ -184,7 +153,6 @@ export async function POST(req: Request) {
         currentPathNodes: Array.from(pathNodes),
         currentPathEdges: pathEdges,
         flows: { ...currentFlows },
-        //residualCapacities: { ...residualCapacities },
       });
 
       for (let i = 0; i < path.length - 1; i++) {
@@ -203,7 +171,6 @@ export async function POST(req: Request) {
 
         if (cy.edges().contains(forwardEdge)) {
           currentFlows[forwardEdge.id()] += minCapacity;
-          //residualCapacities[forwardEdge.id()] -= minCapacity;
           stepByStepExplanation.push(
             `Обновляем поток между вершинами \"${sourceTitle}\" и \"${targetTitle}\". Новое значение потока: ${oldFlow} + ${minCapacity} = ${
               currentFlows[forwardEdge.id()]
@@ -212,7 +179,6 @@ export async function POST(req: Request) {
         } else {
           const reverseEdge = cy.getElementById(`${path![i + 1]}-${path![i]}`);
           currentFlows[reverseEdge.id()] += minCapacity;
-          //residualCapacities[reverseEdge.id()] -= minCapacity;
           stepByStepExplanation.push(
             `Обновляем поток между вершинами \"${targetTitle}\" и \"${sourceTitle}\". Новое значение потока: ${oldFlow} + ${minCapacity} = ${
               currentFlows[forwardEdge.id()]
@@ -226,7 +192,6 @@ export async function POST(req: Request) {
           currentPathNodes: Array.from(pathNodes),
           currentPathEdges: pathEdges,
           flows: { ...currentFlows },
-          //residualCapacities: { ...residualCapacities },
         });
 
         let reverseEdge = newCy
@@ -261,30 +226,13 @@ export async function POST(req: Request) {
         flow: minCapacity,
       });
 
-      pathNodes.forEach(node => {
+      pathNodes.forEach((node) => {
         flowPathsNodes.add(node);
-      })
+      });
 
-      pathEdges.forEach(edge => {
+      pathEdges.forEach((edge) => {
         flowPathsEdges.add(edge);
-      })
-
-      /*for (let i = 0; i < path.length; i++) {
-        flowPathsNodes.add(path[i]);
-        let edge = cy
-          .edges()
-          .filter(
-            (edge) =>
-              edge.data("source") === path![i] &&
-              edge.data("target") === path![i + 1]
-          )[0];
-        if (edge) {
-          flowPathsEdges.push(edge.id());
-        } else {
-          const reverseEdge = cy.getElementById(`${path![i + 1]}-${path![i]}`);
-          flowPathsEdges.push(reverseEdge.id());
-        }
-      }*/
+      });
 
       frames.push({
         visitedNodes: Array.from(flowPathsNodes),
@@ -292,7 +240,6 @@ export async function POST(req: Request) {
         currentPathNodes: Array.from(pathNodes),
         currentPathEdges: pathEdges,
         flows: { ...currentFlows },
-        //residualCapacities: { ...residualCapacities },
       });
       stepByStepExplanation.push(
         `Ищем новый кратчайший (по количеству рёбер) увеличивающий путь из истока (вершина \"${sourceNodeTitle}\") до стока (вершина \"${sinkNodeTitle}\") с помощью поиска в ширину`
@@ -306,7 +253,6 @@ export async function POST(req: Request) {
       currentPathNodes: [],
       currentPathEdges: [],
       flows: { ...currentFlows },
-      //residualCapacities: { ...residualCapacities },
     });
     stepByStepExplanation.push(
       `Увеличивающий путь не найден, завершаем алгоритм`

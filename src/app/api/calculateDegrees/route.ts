@@ -11,7 +11,6 @@ export async function POST(req: Request) {
   function calculateDegrees(cy: Core) {
     const frames: any[] = [];
     const stepByStepExplanation: string[] = [];
-    //const processedNodes = new Set<string>();
     let sortedNodes = cy
       .nodes()
       .sort((a, b) => Number(a.id()) - Number(b.id()));
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
         frames.push({
           currentNode: nodeId,
           currentEdge: "",
-          //processedNodes: Array.from(processedNodes),
           degrees: JSON.parse(JSON.stringify(degrees)),
         });
 
@@ -82,12 +80,9 @@ export async function POST(req: Request) {
           frames.push({
             currentNode: nodeId,
             currentEdge: edge.id(),
-            //processedNodes: Array.from(processedNodes),
             degrees: JSON.parse(JSON.stringify(degrees)),
           });
         });
-
-        //processedNodes.add(nodeId);
       });
 
       function getNodesDegreesText(degrees: { [key: string]: number }) {
@@ -150,7 +145,6 @@ ${nodesDegreesText}
         frames.push({
           currentNode: nodeId,
           currentEdge: "",
-          //processedNodes: Array.from(processedNodes),
           degrees: JSON.parse(JSON.stringify(degrees)),
         });
 
@@ -218,12 +212,9 @@ ${nodesDegreesText}
           frames.push({
             currentNode: nodeId,
             currentEdge: edge.id(),
-            //processedNodes: Array.from(processedNodes),
             degrees: JSON.parse(JSON.stringify(degrees)),
           });
         });
-
-        //processedNodes.add(nodeId);
       });
 
       function getNodesDegreesText(degrees: {

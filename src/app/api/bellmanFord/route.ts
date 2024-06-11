@@ -14,10 +14,12 @@ export async function POST(req: Request) {
     let frames: any[] = [];
     const startNodeTitle: string = cy.getElementById(startNodeId).data("title");
     const endNodeTitle: string = cy.getElementById(endNodeId).data("title");
-    let stepByStepExplanation: string[] = [`Устанавливаем нулевое расстояние до начальной вершины "${startNodeTitle}", расстояние до всех остальных вершин - ∞`];
+    let stepByStepExplanation: string[] = [
+      `Устанавливаем нулевое расстояние до начальной вершины "${startNodeTitle}", расстояние до всех остальных вершин - ∞`,
+    ];
     let sortedEdges = cy.edges().sort((a, b) => {
-      const aIds = a.id().split('-').map(Number);
-      const bIds = b.id().split('-').map(Number);
+      const aIds = a.id().split("-").map(Number);
+      const bIds = b.id().split("-").map(Number);
 
       if (aIds[0] !== bIds[0]) {
         return aIds[0] - bIds[0];
@@ -45,9 +47,7 @@ export async function POST(req: Request) {
       paths: Object.keys(distances).reduce(
         (acc: { [key: string]: string }, key) => {
           acc[key] =
-            distances[key] === Infinity
-              ? "∞"
-              : distances[key].toString();
+            distances[key] === Infinity ? "∞" : distances[key].toString();
           return acc;
         },
         {}
@@ -59,7 +59,6 @@ export async function POST(req: Request) {
 
     for (let i = 0; i < nodes.length - 1; i++) {
       let updated = false;
-      //stepByStepExplanation.push(`Итерация ${i + 1}: рассматриваем все рёбра графа`)
 
       edges.forEach(({ edgeId, source, target, weight, directed }) => {
         if (directed) {
@@ -71,9 +70,9 @@ export async function POST(req: Request) {
           }
 
           let alt = distances[source] + weight;
-          let pathComparsion = `${distances[source] === Infinity ? "∞" : distances[source]} + ${weight} ${
-            alt < distances[target] ? "<" : ">"
-          } ${
+          let pathComparsion = `${
+            distances[source] === Infinity ? "∞" : distances[source]
+          } + ${weight} ${alt < distances[target] ? "<" : ">"} ${
             distances[target] === Infinity ? "∞" : distances[target]
           }`;
 
@@ -83,9 +82,7 @@ export async function POST(req: Request) {
             paths: Object.keys(distances).reduce(
               (acc: { [key: string]: string }, key) => {
                 acc[key] =
-                  distances[key] === Infinity
-                    ? "∞"
-                    : distances[key].toString();
+                  distances[key] === Infinity ? "∞" : distances[key].toString();
                 return acc;
               },
               {}
@@ -94,13 +91,21 @@ export async function POST(req: Request) {
             pathNodes: [],
             pathEdges: [],
           });
-          stepByStepExplanation.push(`Итерация ${i + 1}: Рассматриваем ребро "${edgeTitle}", соединяющее вершины "${sourceTitle}" и "${targetTitle}". Текущее расстояние до вершины "${targetTitle}": ${distances[target] === Infinity ? "∞" : distances[target]}, новое расстояние: ${alt === Infinity ? "∞" : alt} (${pathComparsion})`);
+          stepByStepExplanation.push(
+            `Итерация ${
+              i + 1
+            }: Рассматриваем ребро "${edgeTitle}", соединяющее вершины "${sourceTitle}" и "${targetTitle}". Текущее расстояние до вершины "${targetTitle}": ${
+              distances[target] === Infinity ? "∞" : distances[target]
+            }, новое расстояние: ${
+              alt === Infinity ? "∞" : alt
+            } (${pathComparsion})`
+          );
 
           if (alt < distances[target]) {
             distances[target] = alt;
             prev[target] = source;
             updated = true;
-            
+
             frames.push({
               currentEdge: edgeId,
               nextNode: target,
@@ -118,7 +123,9 @@ export async function POST(req: Request) {
               pathNodes: [],
               pathEdges: [],
             });
-            stepByStepExplanation.push(`Так как ${pathComparsion}, обновляем расстояние до вершины "${targetTitle}" до ${alt}.`)
+            stepByStepExplanation.push(
+              `Так как ${pathComparsion}, обновляем расстояние до вершины "${targetTitle}" до ${alt}.`
+            );
           }
         } else {
           [source, target].forEach((start, index) => {
@@ -130,9 +137,9 @@ export async function POST(req: Request) {
               edgeTitle = `${startTitle}-${endTitle}`;
             }
             let alt = distances[start] + weight;
-            let pathComparsion = `${distances[start] === Infinity ? "∞" : distances[start]} + ${weight} ${
-              alt < distances[end] ? "<" : ">"
-            } ${
+            let pathComparsion = `${
+              distances[start] === Infinity ? "∞" : distances[start]
+            } + ${weight} ${alt < distances[end] ? "<" : ">"} ${
               distances[end] === Infinity ? "∞" : distances[end]
             }`;
 
@@ -153,7 +160,15 @@ export async function POST(req: Request) {
               pathNodes: [],
               pathEdges: [],
             });
-            stepByStepExplanation.push(`Итерация ${i + 1}: Рассматриваем ребро "${edgeTitle}", соединяющее вершины "${startTitle}" и "${endTitle}". Текущее расстояние до вершины "${endTitle}": ${distances[end] === Infinity ? "∞" : distances[end]}, новое расстояние: ${alt === Infinity ? "∞" : alt} (${pathComparsion})`);
+            stepByStepExplanation.push(
+              `Итерация ${
+                i + 1
+              }: Рассматриваем ребро "${edgeTitle}", соединяющее вершины "${startTitle}" и "${endTitle}". Текущее расстояние до вершины "${endTitle}": ${
+                distances[end] === Infinity ? "∞" : distances[end]
+              }, новое расстояние: ${
+                alt === Infinity ? "∞" : alt
+              } (${pathComparsion})`
+            );
 
             if (alt < distances[end]) {
               distances[end] = alt;
@@ -177,7 +192,9 @@ export async function POST(req: Request) {
                 pathNodes: [],
                 pathEdges: [],
               });
-              stepByStepExplanation.push(`Так как ${pathComparsion}, обновляем расстояние до вершины "${endTitle}" до ${alt}.`)
+              stepByStepExplanation.push(
+                `Так как ${pathComparsion}, обновляем расстояние до вершины "${endTitle}" до ${alt}.`
+              );
             }
           });
         }
@@ -189,12 +206,6 @@ export async function POST(req: Request) {
     let hasNegativeCycle = edges.some(({ source, target, weight }) => {
       return distances[source] + weight < distances[target];
     });
-
-    /*if (hasNegativeCycle) {
-      stepByStepExplanation.push(`Обнаружен цикл отрицательного веса.`);
-    } else {
-      stepByStepExplanation.push(`Циклы отрицательного веса не обнаружены.`);
-    }*/
 
     let resultText = "";
     let shortResultText = "";
@@ -225,9 +236,9 @@ export async function POST(req: Request) {
         ? pathTitles.join(" 🠖 ")
         : "не существует";
       let allShortPaths = "";
-      let sortedNodes = cy.nodes().sort((a, b) =>
-        Number(a.id()) - Number(b.id())
-      );
+      let sortedNodes = cy
+        .nodes()
+        .sort((a, b) => Number(a.id()) - Number(b.id()));
       sortedNodes.forEach((node) => {
         let nodeId = node.id();
         let nodeTitle = node.data("title");
@@ -277,7 +288,9 @@ export async function POST(req: Request) {
 **Конечная вершина:** "${endNodeTitle}"
 
 **Кратчайший путь до конечной вершины:** ${pathString}  
-**Длина кратчайшего пути:** ${distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]}  
+**Длина кратчайшего пути:** ${
+        distances[endNodeId] === Infinity ? "∞" : distances[endNodeId]
+      }  
 
 **Пошаговое описание алгоритма:**
 
@@ -314,14 +327,22 @@ ${allShortPaths}
       return path;
     }
 
-    // Формирование resultText
-    //let resultText = generateResultText(distances, prev, startNodeId, endNodeId, hasNegativeCycle, cy);
-
-    return { frames, shortResultText, resultText, stepByStepExplanation, hasNegativeCycle }
+    return {
+      frames,
+      shortResultText,
+      resultText,
+      stepByStepExplanation,
+      hasNegativeCycle,
+    };
   }
 
-  const { frames, shortResultText, resultText, stepByStepExplanation, hasNegativeCycle } =
-    bellmanFord(cy, startNodeId, endNodeId);
+  const {
+    frames,
+    shortResultText,
+    resultText,
+    stepByStepExplanation,
+    hasNegativeCycle,
+  } = bellmanFord(cy, startNodeId, endNodeId);
 
   return NextResponse.json({
     frames: frames,

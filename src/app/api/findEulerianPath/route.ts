@@ -212,15 +212,6 @@ export async function POST(req: Request) {
         return false;
       }
     }
-    /*directedGraph.nodes().forEach((node) => {
-      let reachable = directedGraph.bfs({ roots: node, directed: true }).found;
-      //console.log(node.id());
-      if (reachable.length !== directedGraph.nodes().length) {
-        //console.log(reachable.map(n => n.id()));
-        console.log("false must be returned here");
-        return false;
-      }
-    });*/
 
     return true;
   }
@@ -454,12 +445,15 @@ ${stepByStepExplanation
 - Общее количество рёбер графа: ${totalEdges}  
 - Количество шагов алгоритма: ${steps}  
 
-**Узнать больше об алгоритме нахождения эйлерова ${needCycle ? "цикла" : "пути"} можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Эйлеров_цикл).**`;
+**Узнать больше об алгоритме нахождения эйлерова ${
+      needCycle ? "цикла" : "пути"
+    } можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Эйлеров_цикл).**`;
 
     return { frames, shortResultText, resultText, stepByStepExplanation };
   }
 
-  const { frames, shortResultText, resultText, stepByStepExplanation } = findEulerianPath(cy);
+  const { frames, shortResultText, resultText, stepByStepExplanation } =
+    findEulerianPath(cy);
 
   return NextResponse.json({
     frames,

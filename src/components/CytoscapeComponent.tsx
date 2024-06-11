@@ -1,68 +1,87 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import cytoscape, { Core, Position, Stylesheet, EventObject, EdgeSingular, NodeSingular, ElementDefinition } from 'cytoscape';
+import cytoscape, {
+  Position,
+  EventObject,
+  EdgeSingular,
+  NodeSingular,
+} from "cytoscape";
 import popper from "cytoscape-popper";
 import { useGraphEditor } from "@/contexts/GraphEditorContext";
-import { useEdgeConfigurator } from '@/contexts/EdgeConfiguratorContext';
+import { useEdgeConfigurator } from "@/contexts/EdgeConfiguratorContext";
 import ZoomSlider from "./ZoomSlider";
 import Toolbar from "./Toolbar";
-import Tooltip from './Tooltip';
-import NodeContextMenu from './NodeContextMenu';
-import EdgeContextMenu from './EdgeContextMenu';
-import AnimationToolbar from './AnimationToolbar';
-import jquery from 'jquery';
-import graphml from 'cytoscape-graphml';
-cytoscape.use( popper );
-graphml( cytoscape, jquery );
+import Tooltip from "./Tooltip";
+import NodeContextMenu from "./NodeContextMenu";
+import EdgeContextMenu from "./EdgeContextMenu";
+import AnimationToolbar from "./AnimationToolbar";
+import jquery from "jquery";
+import graphml from "cytoscape-graphml";
+cytoscape.use(popper);
+graphml(cytoscape, jquery);
 
 const CytoscapeComponent: React.FC = () => {
-  const { cyRef, getThemeStyles, saveGraph, saveState, checked, showGrid, tooltipContent, setTooltipContent, addNodeMode, addEdgeMode, deleteMode, sourceNode, setSourceNode, algorithmMode, selectedAlgorithm, isAnimationReady, isLoading, setIsLoading, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText } = useGraphEditor();
+  const {
+    cyRef,
+    getThemeStyles,
+    saveGraph,
+    saveState,
+    checked,
+    showGrid,
+    tooltipContent,
+    setTooltipContent,
+    addNodeMode,
+    addEdgeMode,
+    deleteMode,
+    sourceNode,
+    setSourceNode,
+    algorithmMode,
+    selectedAlgorithm,
+    isAnimationReady,
+    isLoading,
+    setIsLoading,
+    startAnimation,
+    setAlgorithmDetails,
+    setStepByStepExplanation,
+    setResultText,
+  } = useGraphEditor();
   const { openEdgeConfigurator } = useEdgeConfigurator();
   const [isCyReady, setIsCyReady] = useState(false);
   //const [sourceNode, setSourceNode] = useState("");
-  const [nodeContextMenuPosition, setNodeContextMenuPosition] = useState<{ x: number; y: number; } | null>(null);
-  const [edgeContextMenuPosition, setEdgeContextMenuPosition] = useState<{ x: number; y: number; } | null>(null);
+  const [nodeContextMenuPosition, setNodeContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [edgeContextMenuPosition, setEdgeContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [selectedNode, setSelectedNode] = useState<NodeSingular | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<EdgeSingular | null>(null);
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [graphState, setGraphState] = useState({});
   //const [isLoading, setIsLoading] = useState(false);
   const nodeCounter = useRef<number>(1);
-  
 
   useEffect(() => {
     nodeCounter.current = 1;
-    
+
     cyRef.current = cytoscape({
-      container: document.getElementById('cy'),
-      elements: [
-        /*{
-          data: { id: 'a', title: "Полить цветы" },
-        },
-        {
-          data: { id: 'b', title: "Вынести мусор" },
-        },
-        { 
-          data: { id: 'a-b', source: 'a', target: 'b', title: "", weight: 5, displayedWeight: "5" }
-        }*/
-      ],
+      container: document.getElementById("cy"),
+      elements: [],
       style: [],
-      /*layout: {
-        name: 'preset',
-        padding: 128,
-      },*/
       minZoom: 0.4,
       maxZoom: 6.4,
     });
 
     const loadGraph = (cy: cytoscape.Core) => {
-      const savedGraph = localStorage.getItem('userGraph');
+      const savedGraph = localStorage.getItem("userGraph");
       if (savedGraph) {
         const graphData = JSON.parse(savedGraph);
         cy.json(graphData);
       }
     };
-    
+
     loadGraph(cyRef.current);
 
     /*let node = cyRef.current.nodes().first();
@@ -150,8 +169,8 @@ const CytoscapeComponent: React.FC = () => {
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          const newTheme = document.documentElement.getAttribute('data-theme');
+        if (mutation.attributeName === "data-theme") {
+          const newTheme = document.documentElement.getAttribute("data-theme");
           updateStyles(newTheme!);
         }
       });
@@ -159,7 +178,7 @@ const CytoscapeComponent: React.FC = () => {
 
     observer.observe(document.documentElement, { attributes: true });
 
-    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const currentTheme = document.documentElement.getAttribute("data-theme");
     updateStyles(currentTheme!);
 
     cyRef.current.zoom(1.6);
@@ -167,27 +186,31 @@ const CytoscapeComponent: React.FC = () => {
     updateGridBackground(cyRef.current.pan(), cyRef.current.zoom());
 
     const resizeCy = () => {
-      const container = document.getElementById('cy');
+      const container = document.getElementById("cy");
       container!.style.height = `${window.innerHeight}px`;
       cyRef.current!.resize();
     };
-    
-    cyRef.current.on('pan', () => updateGridBackground(cyRef.current!.pan(), cyRef.current!.zoom()));
-    cyRef.current.on('zoom', () => updateGridBackground(cyRef.current!.pan(), cyRef.current!.zoom()));
 
-    window.addEventListener('resize', resizeCy);
-  
+    cyRef.current.on("pan", () =>
+      updateGridBackground(cyRef.current!.pan(), cyRef.current!.zoom())
+    );
+    cyRef.current.on("zoom", () =>
+      updateGridBackground(cyRef.current!.pan(), cyRef.current!.zoom())
+    );
+
+    window.addEventListener("resize", resizeCy);
+
     return () => {
-      window.removeEventListener('resize', resizeCy);
+      window.removeEventListener("resize", resizeCy);
       observer.disconnect();
       cyRef.current?.removeAllListeners();
       cyRef.current?.destroy();
-    }
+    };
   }, [cyRef, getThemeStyles]);
 
   const getMaxNodeId = useCallback(() => {
     let maxId = 0;
-    cyRef.current!.nodes().each(node => {
+    cyRef.current!.nodes().each((node) => {
       const nodeId = parseInt(node.id());
       if (nodeId > maxId) {
         maxId = nodeId;
@@ -198,18 +221,23 @@ const CytoscapeComponent: React.FC = () => {
 
   const unselectNodes = useCallback(() => {
     cyRef.current!.elements(".selected").removeClass("selected");
-  }, [cyRef])
+  }, [cyRef]);
 
   useEffect(() => {
     const hasNegativeEdgeWeight = () => {
-      return cyRef.current!.edges().some(edge => {
+      return cyRef.current!.edges().some((edge) => {
         const weight = edge.data("weight");
         return weight < 0;
-      })
+      });
     };
 
     const isFunctionalGraph = () => {
-      if (!cyRef.current!.edges().every(edge => (edge as EdgeSingular).hasClass('oriented'))) return false;
+      if (
+        !cyRef
+          .current!.edges()
+          .every((edge) => (edge as EdgeSingular).hasClass("oriented"))
+      )
+        return false;
       const nodes = cyRef.current!.nodes();
       for (let i = 0; i < nodes.length; i++) {
         const outgoingEdges = nodes[i].outgoers().edges();
@@ -218,7 +246,7 @@ const CytoscapeComponent: React.FC = () => {
         }
       }
       return true;
-    }
+    };
 
     const handleClick = (event: EventObject) => {
       if (addNodeMode && event.target === cyRef.current) {
@@ -228,17 +256,16 @@ const CytoscapeComponent: React.FC = () => {
         saveState();
 
         cyRef.current!.add({
-          group: 'nodes',
+          group: "nodes",
           data: { id: nodeId, title: nodeId },
           position: {
             x: pos.x,
-            y: pos.y
-          }
+            y: pos.y,
+          },
         });
 
         saveGraph();
-      }
-      else if (addEdgeMode && event.target === cyRef.current) {
+      } else if (addEdgeMode && event.target === cyRef.current) {
         unselectNodes();
         setSourceNode("");
       }
@@ -247,7 +274,7 @@ const CytoscapeComponent: React.FC = () => {
     const handleNodeSelect = (event: EventObject) => {
       if (addEdgeMode) {
         const nodeId = event.target.id();
-        
+
         if (!sourceNode) {
           setSourceNode(nodeId);
           event.target.addClass("selected");
@@ -270,16 +297,47 @@ const CytoscapeComponent: React.FC = () => {
             }
           }*/
           if (edge.length > 0 && edge.is("edge")) {
-            openEdgeConfigurator("edit", cyRef.current!, sourceNode, nodeId, reverseEdge.length > 0 ? reverseEdge : undefined, edge.data("title"), edge.data("weight"), edge.data("displayedWeight"), edge.hasClass("oriented"));
+            openEdgeConfigurator(
+              "edit",
+              cyRef.current!,
+              sourceNode,
+              nodeId,
+              reverseEdge.length > 0 ? reverseEdge : undefined,
+              edge.data("title"),
+              edge.data("weight"),
+              edge.data("displayedWeight"),
+              edge.hasClass("oriented")
+            );
           } else {
             if (reverseEdge.length > 0 && reverseEdge.is("edge")) {
               if (reverseEdge.hasClass("oriented")) {
-                openEdgeConfigurator("create", cyRef.current!, sourceNode, nodeId, reverseEdge);
+                openEdgeConfigurator(
+                  "create",
+                  cyRef.current!,
+                  sourceNode,
+                  nodeId,
+                  reverseEdge
+                );
               } else {
-                openEdgeConfigurator("replace", cyRef.current!, sourceNode, nodeId, reverseEdge, reverseEdge.data("title"), reverseEdge.data("weight"), reverseEdge.data("displayedWeight"), false);
+                openEdgeConfigurator(
+                  "replace",
+                  cyRef.current!,
+                  sourceNode,
+                  nodeId,
+                  reverseEdge,
+                  reverseEdge.data("title"),
+                  reverseEdge.data("weight"),
+                  reverseEdge.data("displayedWeight"),
+                  false
+                );
               }
             } else {
-              openEdgeConfigurator("create", cyRef.current!, sourceNode, nodeId);
+              openEdgeConfigurator(
+                "create",
+                cyRef.current!,
+                sourceNode,
+                nodeId
+              );
             }
           }
           unselectNodes();
@@ -373,6 +431,7 @@ const CytoscapeComponent: React.FC = () => {
                         resultText,
                         stepByStepExplanation,
                       } = response.data;
+                      console.log(frames);
                       setTimeout(() => {
                         unselectNodes();
                         setSourceNode("");
@@ -534,21 +593,25 @@ const CytoscapeComponent: React.FC = () => {
       if (!algorithmMode) {
         const node = event.target;
         const renderedPos = event.renderedPosition;
-        const containerOffset = document.getElementById('cy')!.getBoundingClientRect();
-  
+        const containerOffset = document
+          .getElementById("cy")!
+          .getBoundingClientRect();
+
         const pageX = renderedPos.x + containerOffset.left;
         const pageY = renderedPos.y + containerOffset.top;
-  
+
         setNodeContextMenuPosition({ x: pageX, y: pageY });
         setSelectedNode(node);
       }
-    }
+    };
 
     const handleEdgeRightClick = (event: EventObject) => {
       if (!algorithmMode) {
         const edge = event.target;
         const renderedPos = event.renderedPosition;
-        const containerOffset = document.getElementById('cy')!.getBoundingClientRect();
+        const containerOffset = document
+          .getElementById("cy")!
+          .getBoundingClientRect();
 
         const pageX = renderedPos.x + containerOffset.left;
         const pageY = renderedPos.y + containerOffset.top;
@@ -556,42 +619,68 @@ const CytoscapeComponent: React.FC = () => {
         setEdgeContextMenuPosition({ x: pageX, y: pageY });
         setSelectedEdge(edge);
       }
-    }
+    };
 
     const handleNodeGrab = (event: EventObject) => {
       const node = event.target as NodeSingular;
       setGraphState(cyRef.current!.json());
       const position = node.position();
       setInitialPosition({ x: position.x, y: position.y });
-    }
+    };
 
     const handleNodeFree = (event: EventObject) => {
       const node = event.target as NodeSingular;
       const newPosition = node.position();
-      if (newPosition.x !== initialPosition.x && newPosition.y !== initialPosition.y) {
+      if (
+        newPosition.x !== initialPosition.x &&
+        newPosition.y !== initialPosition.y
+      ) {
         saveState(graphState);
         saveGraph();
       }
-    }
+    };
 
-    cyRef.current!.on('tap', handleClick);
-    cyRef.current!.on('tap', 'node', handleNodeSelect);
-    cyRef.current!.on('tap', 'node, edge', handleElementClick);
-    cyRef.current!.on('cxttap', 'node', handleNodeRightClick);
-    cyRef.current!.on('cxttap', 'edge', handleEdgeRightClick);
-    cyRef.current!.on('grab', 'node', handleNodeGrab);
-    cyRef.current!.on('free', 'node', handleNodeFree);
+    cyRef.current!.on("tap", handleClick);
+    cyRef.current!.on("tap", "node", handleNodeSelect);
+    cyRef.current!.on("tap", "node, edge", handleElementClick);
+    cyRef.current!.on("cxttap", "node", handleNodeRightClick);
+    cyRef.current!.on("cxttap", "edge", handleEdgeRightClick);
+    cyRef.current!.on("grab", "node", handleNodeGrab);
+    cyRef.current!.on("free", "node", handleNodeFree);
 
     return () => {
-      cyRef.current?.removeListener('tap', handleClick);
-      cyRef.current?.removeListener('tap', 'node', handleNodeSelect);
-      cyRef.current?.removeListener('tap', 'node, edge', handleElementClick);
-      cyRef.current?.removeListener('cxttap', 'node', handleNodeRightClick);
-      cyRef.current?.removeListener('cxttap', 'edge', handleEdgeRightClick);
-      cyRef.current?.removeListener('grab', 'node', handleNodeGrab);
-      cyRef.current?.removeListener('free', 'node', handleNodeFree);
-    }
-  }, [cyRef, saveGraph, saveState, getMaxNodeId, unselectNodes, addNodeMode, addEdgeMode, deleteMode, sourceNode, openEdgeConfigurator, initialPosition, graphState, algorithmMode, selectedAlgorithm, setTooltipContent, startAnimation, setAlgorithmDetails, setStepByStepExplanation, setResultText, isAnimationReady, setSourceNode, setIsLoading])
+      cyRef.current?.removeListener("tap", handleClick);
+      cyRef.current?.removeListener("tap", "node", handleNodeSelect);
+      cyRef.current?.removeListener("tap", "node, edge", handleElementClick);
+      cyRef.current?.removeListener("cxttap", "node", handleNodeRightClick);
+      cyRef.current?.removeListener("cxttap", "edge", handleEdgeRightClick);
+      cyRef.current?.removeListener("grab", "node", handleNodeGrab);
+      cyRef.current?.removeListener("free", "node", handleNodeFree);
+    };
+  }, [
+    cyRef,
+    saveGraph,
+    saveState,
+    getMaxNodeId,
+    unselectNodes,
+    addNodeMode,
+    addEdgeMode,
+    deleteMode,
+    sourceNode,
+    openEdgeConfigurator,
+    initialPosition,
+    graphState,
+    algorithmMode,
+    selectedAlgorithm,
+    setTooltipContent,
+    startAnimation,
+    setAlgorithmDetails,
+    setStepByStepExplanation,
+    setResultText,
+    isAnimationReady,
+    setSourceNode,
+    setIsLoading,
+  ]);
 
   useEffect(() => {
     if (!addEdgeMode) {
@@ -604,8 +693,12 @@ const CytoscapeComponent: React.FC = () => {
     const gridSize = 20 * zoomLevel;
     const posX = pan.x % gridSize;
     const posY = pan.y % gridSize;
-    document.getElementById('cy')!.style.backgroundSize = `${gridSize}px ${gridSize}px`;
-    document.getElementById('cy')!.style.backgroundPosition = `${posX}px ${posY}px`;
+    document.getElementById(
+      "cy"
+    )!.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+    document.getElementById(
+      "cy"
+    )!.style.backgroundPosition = `${posX}px ${posY}px`;
   };
 
   const handleCloseNodeContextMenu = () => {
@@ -618,12 +711,25 @@ const CytoscapeComponent: React.FC = () => {
 
   return (
     <>
-      <div id="cy" className={`w-full h-full ${showGrid ? "grid-background" : ""} overflow-hidden ${checked ? "" : "absolute top-0 left-0"}`} />
+      <div
+        id="cy"
+        className={`w-full h-full ${
+          showGrid ? "grid-background" : ""
+        } overflow-hidden ${checked ? "" : "absolute top-0 left-0"}`}
+      />
       {isCyReady && <ZoomSlider />}
       <Toolbar />
       <Tooltip content={tooltipContent} isLoading={isLoading} />
-      <NodeContextMenu position={nodeContextMenuPosition} node={selectedNode} close={handleCloseNodeContextMenu} />
-      <EdgeContextMenu position={edgeContextMenuPosition} edge={selectedEdge} close={handleCloseEdgeContextMenu} />
+      <NodeContextMenu
+        position={nodeContextMenuPosition}
+        node={selectedNode}
+        close={handleCloseNodeContextMenu}
+      />
+      <EdgeContextMenu
+        position={edgeContextMenuPosition}
+        edge={selectedEdge}
+        close={handleCloseEdgeContextMenu}
+      />
       <AnimationToolbar />
     </>
   );

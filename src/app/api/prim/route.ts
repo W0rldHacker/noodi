@@ -31,7 +31,6 @@ export async function POST(req: Request) {
     ];
 
     frames.push({
-      //currentEdge: "",
       mstNodes: Array.from(visited),
       mstEdges: mstEdges.map((e) => e.id()),
     });
@@ -68,7 +67,6 @@ export async function POST(req: Request) {
         visited.add(nextNodeId);
 
         frames.push({
-          //currentEdge: edge.id(),
           mstNodes: Array.from(visited),
           mstEdges: mstEdges.map((e) => e.id()),
         });

@@ -8,7 +8,11 @@ export async function POST(req: Request) {
     elements: graph.elements,
   });
 
-  function findHamiltonianPath(cy: Core, startNodeId: string, needCycle: boolean) {
+  function findHamiltonianPath(
+    cy: Core,
+    startNodeId: string,
+    needCycle: boolean
+  ) {
     let path = [startNodeId];
     let visitedNodes = new Set([startNodeId]);
     let visitedEdges = new Set();
@@ -19,13 +23,16 @@ export async function POST(req: Request) {
 
     function backtrack(currentNodeId: string, prevNodeId: string) {
       const currentNodeTitle = cy.getElementById(currentNodeId).data("title");
-      let stepDescription = currentNodeId !== startNodeId
-          ? `Переходим от вершины \"${cy.getElementById(prevNodeId).data("title")}\" к вершине \"${currentNodeTitle}\"`
+      let stepDescription =
+        currentNodeId !== startNodeId
+          ? `Переходим от вершины \"${cy
+              .getElementById(prevNodeId)
+              .data("title")}\" к вершине \"${currentNodeTitle}\"`
           : `Начинаем обход с начальной вершины "${currentNodeTitle}"`;
       stepByStepExplanation.push(stepDescription);
       frames.push({
         visitedNodes: Array.from(visitedNodes),
-        visitedEdges: Array.from(visitedEdges)
+        visitedEdges: Array.from(visitedEdges),
       });
 
       if (path.length === cy.nodes().length) {
@@ -48,9 +55,7 @@ export async function POST(req: Request) {
           return false;
         } else {
           found = true;
-          stepByStepExplanation.push(
-            `Гамильтонов путь: ${path.join(" 🠖 ")}`
-          );
+          stepByStepExplanation.push(`Гамильтонов путь: ${path.join(" 🠖 ")}`);
           frames.push({
             visitedNodes: Array.from(visitedNodes),
             visitedEdges: Array.from(visitedEdges),
@@ -59,19 +64,23 @@ export async function POST(req: Request) {
         }
       }
 
-      let sortedNeighbors = cy.getElementById(currentNodeId).neighborhood().nodes().sort((a, b) =>
-        Number(a.id()) - Number(b.id())
-      );
-      sortedNeighbors.forEach(neighbor => {
+      let sortedNeighbors = cy
+        .getElementById(currentNodeId)
+        .neighborhood()
+        .nodes()
+        .sort((a, b) => Number(a.id()) - Number(b.id()));
+      sortedNeighbors.forEach((neighbor) => {
         let neighborId = neighbor.id();
         let edge = cy.getElementById(currentNodeId).edgesWith(neighbor).first();
-        if (!visitedNodes.has(neighborId) && isEdgeValid(cy.getElementById(currentNodeId), neighbor)) {
+        if (
+          !visitedNodes.has(neighborId) &&
+          isEdgeValid(cy.getElementById(currentNodeId), neighbor)
+        ) {
           path.push(neighborId);
           visitedNodes.add(neighborId);
           if (edge) {
             visitedEdges.add(edge.id());
-          } 
-          //stepByStepExplanation.push(`Переходим к вершине ${neighborId} из ${currentNodeId}`);
+          }
           if (backtrack(neighborId, currentNodeId)) {
             return true;
           }
@@ -79,10 +88,14 @@ export async function POST(req: Request) {
             path.pop();
             visitedNodes.delete(neighborId);
             if (edge) visitedEdges.delete(edge.id());
-            stepByStepExplanation.push(`Возвращаемся из вершины \"${cy.getElementById(neighborId).data("title")}\" к вершине \"${currentNodeTitle}\"`);
+            stepByStepExplanation.push(
+              `Возвращаемся из вершины \"${cy
+                .getElementById(neighborId)
+                .data("title")}\" к вершине \"${currentNodeTitle}\"`
+            );
             frames.push({
               visitedNodes: Array.from(visitedNodes),
-              visitedEdges: Array.from(visitedEdges)
+              visitedEdges: Array.from(visitedEdges),
             });
           }
         }
@@ -93,7 +106,7 @@ export async function POST(req: Request) {
     function isEdgeValid(sourceNode: NodeSingular, targetNode: NodeSingular) {
       let edge = sourceNode.edgesWith(targetNode).first();
       if (!edge.id()) return false;
-      if (edge.hasClass('oriented')) {
+      if (edge.hasClass("oriented")) {
         return edge.source().id() === sourceNode.id();
       }
       return true;
@@ -102,7 +115,9 @@ export async function POST(req: Request) {
     backtrack(startNodeId, "");
 
     if (!found) {
-      stepByStepExplanation.push(`Гамильтонов ${needCycle ? 'цикл' : 'путь'} не найден`);
+      stepByStepExplanation.push(
+        `Гамильтонов ${needCycle ? "цикл" : "путь"} не найден`
+      );
       frames.push({
         visitedNodes: [],
         visitedEdges: [],
@@ -112,11 +127,21 @@ export async function POST(req: Request) {
     const totalVertices = cy.nodes().length;
     const totalEdges = cy.edges().length;
     const steps = frames.length;
-    const shortResultText = `Гамильтонов ${needCycle ? `цикл${found ? `: ${cycle.join(' 🠖 ')}` : ' не найден'}` : `путь${found ? `: ${path.join(' 🠖 ')}` : ' не найден'}`}`;
+    const shortResultText = `Гамильтонов ${
+      needCycle
+        ? `цикл${found ? `: ${cycle.join(" 🠖 ")}` : " не найден"}`
+        : `путь${found ? `: ${path.join(" 🠖 ")}` : " не найден"}`
+    }`;
 
-    const resultText = `### Результат выполнения алгоритма нахождения гамильтонова ${needCycle ? 'цикла' : 'пути'}  
+    const resultText = `### Результат выполнения алгоритма нахождения гамильтонова ${
+      needCycle ? "цикла" : "пути"
+    }  
 
-**Гамильтонов ${needCycle ? `цикл${found ? `:** ${cycle.join(' 🠖 ')}` : '** не найден'}` : `путь${found ? `:** ${path.join(' 🠖 ')}` : ' не найден'}`}  
+**Гамильтонов ${
+      needCycle
+        ? `цикл${found ? `:** ${cycle.join(" 🠖 ")}` : "** не найден"}`
+        : `путь${found ? `:** ${path.join(" 🠖 ")}` : " не найден"}`
+    }  
 
 **Пошаговое описание алгоритма:**
 ${stepByStepExplanation
@@ -130,12 +155,15 @@ ${stepByStepExplanation
 - Общее количество рёбер графа: ${totalEdges}  
 - Количество шагов алгоритма: ${steps}  
 
-**Узнать больше об алгоритме нахождения Гамильтонова ${needCycle ? 'цикла' : 'пути'} можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Гамильтонов_граф).**`;
+**Узнать больше об алгоритме нахождения Гамильтонова ${
+      needCycle ? "цикла" : "пути"
+    } можно по следующей [ссылке](https://ru.wikipedia.org/wiki/Гамильтонов_граф).**`;
 
     return { frames, shortResultText, resultText, stepByStepExplanation };
   }
 
-  const { frames, shortResultText, resultText, stepByStepExplanation } = findHamiltonianPath(cy, cy.nodes()[0].id(), needCycle);
+  const { frames, shortResultText, resultText, stepByStepExplanation } =
+    findHamiltonianPath(cy, cy.nodes()[0].id(), needCycle);
 
   return NextResponse.json({
     frames: frames,

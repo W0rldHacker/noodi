@@ -1,4 +1,4 @@
-import cytoscape, { Core, NodeSingular } from "cytoscape";
+import cytoscape, { Core } from "cytoscape";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
