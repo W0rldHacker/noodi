@@ -41,7 +41,6 @@ const Toolbar: React.FC = () => {
       setIsSettingsOpened(true);
       graphSettings.showModal();
     }
-    close();
   }, [setIsSettingsOpened]);
 
   useEffect(() => {
@@ -264,7 +263,10 @@ const Toolbar: React.FC = () => {
                   className="tooltip h-9 w-9 flex items-center justify-center before:bg-transparent before:text-xs before:mb-2 after:hidden"
                   data-tip="Настройка графа (Ctrl + Alt + C)"
                 >
-                  <button className="p-2 rounded-lg" onClick={openGraphSettings}>
+                  <button
+                    className="p-2 rounded-lg"
+                    onClick={openGraphSettings}
+                  >
                     <FaSliders size={20} />
                   </button>
                 </a>
