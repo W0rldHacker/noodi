@@ -191,8 +191,8 @@ ${stepByStepExplanation
       nodesPointers: getNodesPointers(cy, turtle, hare),
     });
 
-    let cycleNodes = [];
-    let cycleEdges = [];
+    let cycleNodes: any[] = [];
+    let cycleEdges: any[] = [];
     do {
       const prevNodeId =
         cycleNodes.length > 0 ? cycleNodes[cycleNodes.length - 1] : null;
@@ -282,7 +282,9 @@ ${stepByStepExplanation
 **Цикл, достижимый из вершины "${startNode.data("title")}":** ${cycleNodes
       .map((node) => `"${cy.getElementById(node).data("title")}"`)
       .join(" 🠖 ")}  
-**Начальная вершина цикла:** "${cy.getElementById(cycleStartNode).data("title")}"  
+**Начальная вершина цикла:** "${cy
+      .getElementById(cycleStartNode)
+      .data("title")}"  
 **Длина цикла:** ${cycleLength}  
 
 **Пошаговое описание алгоритма:**

@@ -6,6 +6,7 @@ import { MdOutlineLightMode, MdOutlineDarkMode } from "react-icons/md";
 import { useGraphEditor } from "@/contexts/GraphEditorContext";
 import CytoscapeComponent from "@/components/CytoscapeComponent";
 import { EdgeConfiguratorProvider } from "@/contexts/EdgeConfiguratorContext";
+import Link from "next/link";
 
 export default function Home() {
   const { checked, setChecked, enableAlgorithmMode, selectedAlgorithm } =
@@ -121,12 +122,14 @@ export default function Home() {
                 </a>
               </li>
               <li>
-                <a
+                <Link
                   className="menu-btn tooltip before:bg-transparent before:text-xs before:-mb-2.5 before:duration-0 after:hidden"
                   data-tip="GitHub"
+                  href="https://github.com/W0rldHacker/noodi"
+                  target="_blank"
                 >
                   <FaGithub size={20}></FaGithub>
-                </a>
+                </Link>
               </li>
               {/*<li>
                 <a className="menu-btn tooltip before:bg-transparent before:text-xs before:-mb-2.5 before:duration-0 after:hidden" data-tip="Помощь">
